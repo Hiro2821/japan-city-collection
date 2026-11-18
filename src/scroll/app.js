@@ -34,6 +34,7 @@ async function main() {
     renderer.setSize(w, h);
     Object.assign(state, { width: w, height: h, dpr, scale, aspect: cssW / cssH });
     state.w = portraitWeight(state.aspect);
+    city.setLayoutWeight(state.w);
     dirty = true;
   }
 
@@ -41,8 +42,18 @@ async function main() {
   let pinned = null; // 検証用：p を固定して決定的に描画する間だけ使う
   const readP = () => progressFromScroll(track.getBoundingClientRect().top, track.offsetHeight, stage.offsetHeight);
   addEventListener('scroll', () => { dirty = true; }, { passive: true });
-  let rzT = 0;
-  addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(fitSize, 120); });
+
+  // 回転・リサイズで p が飛ばないようにする（旧版には 0.5→0.81 に飛ぶバグがあった）。
+  //   リサイズ中は直前の安定した p（pStable）を保持して描画し、レイアウトが落ち着いたらその p へスクロール位置を戻す。
+  let pStable = 0, resizing = false, rzT = 0;
+  const applyP = (p) => { const max = track.offsetHeight - stage.offsetHeight; window.scrollTo(0, p * max); };
+  const onResize = () => {
+    if (!resizing) { resizing = true; }
+    clearTimeout(rzT);
+    rzT = setTimeout(() => { fitSize(); applyP(pStable); resizing = false; }, 160);
+  };
+  addEventListener('resize', onResize);
+  addEventListener('orientationchange', onResize);
   fitSize();
 
   const panelState = () => ({
@@ -55,7 +66,8 @@ async function main() {
   function loop(now) {
     requestAnimationFrame(loop);
     if (FREEZE) return;
-    state.p = pinned ?? readP();
+    if (!resizing) pStable = pinned ?? readP();
+    state.p = pinned ?? pStable;
     state.t = tOfP(state.p);
     // 雪・車などは実時間で動かし、スクロールを止めても画面が生きているようにする
     const ambient = pinned !== null ? state.t : (now - clock0) / 1000;
@@ -75,7 +87,9 @@ async function main() {
     renderAtProgress(p) { pinned = p; state.p = p; state.t = tOfP(p); renderer.renderAt(state.t, 0, state.t); dbg?.update(panelState()); },
     unpin() { pinned = null; },
     renderer, city, THREE,
-    setAspectTarget() {},
+    /** 指定 p・アスペクト比のカメラ（検証用） */
+    cameraAt(p, aspect) { const w = portraitWeight(aspect); return city.rig.sample(11 + tOfP(p), w); },
+    pStable: () => pStable,
   };
   window.__ready = true;
 }

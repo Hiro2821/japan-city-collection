@@ -18,6 +18,9 @@ const SIZES = {
   ipad: { width: 820, height: 1180, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
   square: { width: 900, height: 900, deviceScaleFactor: 1 },
   desktop: { width: 1440, height: 900, deviceScaleFactor: 1 },
+  blend092: { width: 828, height: 900, deviceScaleFactor: 1 },
+  blend100: { width: 900, height: 900, deviceScaleFactor: 1 },
+  blend108: { width: 972, height: 900, deviceScaleFactor: 1 },
 };
 const a = process.argv.slice(2);
 const get = (k, d) => { const i = a.indexOf('--' + k); return i >= 0 ? a[i + 1] : d; };
