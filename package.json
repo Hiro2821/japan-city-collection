@@ -6,12 +6,17 @@
   "description": "JAPAN — THE CITY COLLECTION: 10 Cities. 10 Stories. One Japan.",
   "config": {
     "threeVersion": "0.187.0",
-    "threeNote": "index.html の THREE_VERSION と vendor/three(r187) を一致させる。npm run check:three で照合"
+    "threeNote": "index.html の THREE_VERSION と vendor/three(r187) を一致させる。npm run check:three で照合",
+    "bundleNote": "src/ を変更したら npm run build:scroll で dist/scroll.bundle.js を再生成すること"
   },
   "scripts": {
     "check:three": "node tools/check-three.mjs",
     "selftest": "node tools/selftest.mjs",
     "export": "node tools/export.mjs",
-    "export:preview": "node tools/export.mjs --scale 0.25 --preview"
+    "export:preview": "node tools/export.mjs --scale 0.25 --preview",
+    "build:scroll": "node tools/build-scroll.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

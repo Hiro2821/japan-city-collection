@@ -7,16 +7,25 @@
 <title>SAPPORO — JAPAN — THE CITY COLLECTION</title>
 <link rel="stylesheet" href="styles-scroll.css">
 <script>
-  // Three.js の読み込み元（import map）。バージョンは 0.187.0 固定。
-  //   既定: jsDelivr CDN。?three=local でローカル(vendor/three)。CDN に届かない場合は自動でローカルへ切替。
+  // ---- 読み込み：既定は単一バンドル dist/scroll.bundle.js（Three.js r187 同梱・CDN 不要）。
+  //   ?bundle=0 でモジュール版（import map）を強制。バンドルが読み込めない場合も自動でモジュール版へ切り替える。
+  //   モジュール版の Three.js は jsDelivr CDN（0.187.0 固定）。?three=local か CDN 不通ならローカル vendor/three に切替。
   window.THREE_VERSION = '0.187.0';
-  window.__threeSource = 'cdn';
+  window.__threeSource = 'bundle';
+  window.__loadMode = null;
   window.__bootError = null;
   (async function () {
+    const q = new URLSearchParams(location.search);
+    const fail = (e) => { window.__bootError = String(e && e.stack || e); const el = document.getElementById('loadMsg'); if (el) el.textContent = '起動に失敗: ' + e; console.error(e); };
+    if (q.get('bundle') !== '0') {
+      try { await import('./dist/scroll.bundle.js'); window.__loadMode = 'bundle'; return; }
+      catch (e) { console.warn('[scroll] バンドルを読み込めないためモジュール版に切り替えます:', e); window.__bundleError = String(e); }
+    }
+    window.__loadMode = 'modules';
     const V = window.THREE_VERSION;
     const cdn = `https://cdn.jsdelivr.net/npm/three@${V}/`;
     const local = new URL('./vendor/three/', document.baseURI).href;
-    const want = new URLSearchParams(location.search).get('three') || 'cdn';
+    const want = q.get('three') || 'cdn';
     let base = want === 'local' ? local : cdn;
     window.__threeSource = want === 'local' ? 'local' : 'cdn';
     if (want !== 'local') {
@@ -34,8 +43,7 @@
     const s = document.createElement('script');
     s.type = 'importmap'; s.textContent = JSON.stringify(map);
     document.head.appendChild(s);
-    try { await import('./src/scroll/app.js'); }
-    catch (e) { window.__bootError = String(e && e.stack || e); document.getElementById('loadMsg').textContent = '起動に失敗: ' + e; console.error(e); }
+    try { await import('./src/scroll/app.js'); } catch (e) { fail(e); }
   })();
 </script>
 </head>
