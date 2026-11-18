@@ -1,0 +1,14 @@
+# 端末別の描画サイズ（CSS px × DPR → 予算内に一様縮小）
+iPhone 390×844 DPR3        T0=372×806(0.30MP)  T1=504×1091(0.55MP)  T2=760×1645(1.25MP)  T3=1053×2279(2.40MP)
+iPad 縦 820×1180 DPR2       T0=457×657(0.30MP)  T1=618×890(0.55MP)  T2=932×1341(1.25MP)  T3=1291×1858(2.40MP)
+横 960×540 DPR1             T0=730×411(0.30MP)  T1=960×540(0.52MP)  T2=960×540(0.52MP)  T3=960×540(0.52MP)
+デスクトップ 1440×900 DPR1       T0=693×433(0.30MP)  T1=938×586(0.55MP)  T2=1414×884(1.25MP)  T3=1440×900(1.30MP)
+横スマホ 844×390 DPR3          T0=806×372(0.30MP)  T1=1091×504(0.55MP)  T2=1645×760(1.25MP)  T3=2279×1053(2.40MP)
+# iPhone 想定（390×844, DPR3, モバイルエミュレーション）
+初期: {"tier":"T1","canvas":"504×1091","MP":0.55,"dpr":3,"scale":0.4309,"msaa":2,"rtSamples":2,"dof":false,"snow":7000,"snowMode":"light","coarse":true}
+T0: {"tier":"T0","canvas":"372×806","MP":0.3,"dpr":3,"scale":0.3182,"msaa":0,"rtSamples":0,"dof":false,"snow":7000,"snowMode":"light","coarse":true}
+T1: {"tier":"T1","canvas":"504×1091","MP":0.55,"dpr":3,"scale":0.4309,"msaa":2,"rtSamples":2,"dof":false,"snow":7000,"snowMode":"light","coarse":true}
+  panel: tier T1 予算0.55MP MSAA2 DoFなし 雪7000  履歴: 23:29:10 T1→T0 (test) | 23:29:10 T0→T1 (test) | canvas 504x1091 (0.55MP)  DPR 3  scale 0.431
+T2: {"tier":"T2","canvas":"760×1645","MP":1.25,"dpr":3,"scale":0.6496,"msaa":2,"rtSamples":2,"dof":true,"snow":7000,"snowMode":"light","coarse":true}
+  panel: tier T2 予算1.25MP MSAA2 DoFあり 雪7000  履歴: 23:29:10 T1→T0 (test) | 23:29:10 T0→T1 (test) | 23:29:18 T1→T2 (test) | canvas 760x1645 (1.25MP)  DPR 3  scale 0.650
+T3: {"tier":"T3","canvas":"1053×2279","MP":2.4,"dpr":3,"scale":0.9001,"msaa":4,"rtSamples":4,"dof":false,"snow":7000,"snowMode":"light","coarse":true}

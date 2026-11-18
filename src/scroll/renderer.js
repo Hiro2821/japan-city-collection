@@ -10,6 +10,13 @@ export class ScrollRenderer extends CityRenderer {
     this.lastInfo = { calls: 0, triangles: 0 };
   }
 
+  /** 描画サイズ・MSAA・DoF の有無を設定する（MSAA が変わるときは合成チェーンを作り直す）。 */
+  applyQuality({ w, h, samples, dof }) {
+    this.dofOn = dof;
+    if (samples !== this.samples) { this.samples = samples; this.width = 0; }
+    this.setSize(w, h);
+  }
+
   /** 実際に GPU 文字列（取得できない環境では 'unknown'）。 */
   gpuString() {
     const gl = this.gl.getContext();
@@ -41,7 +48,7 @@ export class ScrollRenderer extends CityRenderer {
     dof.uFocus.value = f.focusDistance;
     dof.uAperture.value = f.dofAperture ?? 1.0;
     dof.uMaxBlur.value = (f.dofMaxBlur ?? 7) * (this.height / 1080);
-    this.dofPass.enabled = (f.dofMaxBlur ?? 7) > 0.05;
+    this.dofPass.enabled = this.dofOn !== false && (f.dofMaxBlur ?? 7) > 0.05;
     const g = this.gradePass.uniforms;
     g.uFade.value = 1; // スクロール版は黒フェードなし
     g.uSeed.value = frame % 997;

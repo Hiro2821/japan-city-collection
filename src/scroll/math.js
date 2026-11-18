@@ -25,3 +25,23 @@ export const CAPTION_FADE = 0.03; // 窓の両端のフェード幅（窓の内�
 
 /** 窓 (a,b) に対する p での不透明度 0..1。 */
 export const windowOpacity = (a, b, p, f = CAPTION_FADE) => smoothstep(a, a + f, p) * (1 - smoothstep(b - f, b, p));
+
+// ---- 品質ティア（画素数予算方式）。描画画素数が予算(MP)を超えないよう、CSS ピクセル×DPR を一様に縮小する。
+//   T2 のみ被写界深度あり（仕様どおり。T3 は MSAA を優先し DoF なし）。
+export const TIERS = [
+  { id: 'T0', mp: 0.30, samples: 0, dof: false },
+  { id: 'T1', mp: 0.55, samples: 2, dof: false },
+  { id: 'T2', mp: 1.25, samples: 2, dof: true },
+  { id: 'T3', mp: 2.40, samples: 4, dof: false },
+];
+export const SNOW = { normal: 14000, light: 7000 };
+
+/** 予算 mp(百万画素) に収まる描画サイズ。例: 390×844・DPR3 → T1 = 504×1091, T2 = 760×1645 */
+export function fitBudget(cssW, cssH, dpr, mp) {
+  const native = cssW * dpr * cssH * dpr;
+  const scale = Math.min(1, Math.sqrt((mp * 1e6) / native));
+  return { w: Math.max(2, Math.round(cssW * dpr * scale)), h: Math.max(2, Math.round(cssH * dpr * scale)), scale };
+}
+export const isPhone = (cssW, cssH, coarse) => !!coarse && Math.min(cssW, cssH) < 700;
+/** 初期ティア：スマホ T1、それ以外 T2。?tier= で上書きできる（動的な自動調整は行わない）。 */
+export const defaultTier = (cssW, cssH, coarse) => (isPhone(cssW, cssH, coarse) ? 'T1' : 'T2');

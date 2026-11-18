@@ -15,6 +15,9 @@ export class SapporoScrollScene extends SapporoScene {
     this.rig = new ScrollRig();    // frameState() はこの rig.sample(t) を使う
   }
 
+  /** 雪の粒数（通常 14,000 / スマホ軽量 7,000）。描画する頂点数だけを変える。 */
+  setSnowCount(n) { this.snow.points.geometry.setDrawRange(0, n); this.snowCount = n; }
+
   /** 縦画面経路の重み（0=横, 1=縦）。アスペクト比から app.js が設定する。 */
   setLayoutWeight(w) { this.rig.weight = w; }
 }

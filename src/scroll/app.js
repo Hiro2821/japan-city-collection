@@ -3,13 +3,13 @@ import * as THREE from 'three';
 import { ScrollRenderer } from './renderer.js';
 import { SapporoScrollScene } from './scene.js';
 import { DebugPanel } from './debug.js';
-import { progressFromScroll, tOfP, portraitWeight, CAPTIONS, windowOpacity } from './math.js';
+import { progressFromScroll, tOfP, portraitWeight, CAPTIONS, windowOpacity, TIERS, SNOW, fitBudget, isPhone, defaultTier } from './math.js';
 
 const $ = (id) => document.getElementById(id);
 const q = new URLSearchParams(location.search);
 const DEBUG = q.get('debug') === '1';
 const FREEZE = q.get('freeze') === '1'; // 検証用：自動ループを止め、フック経由でのみ描画する
-const FIXED_MP = 0.55; // ステップ2時点の暫定固定予算（ティア方式はステップ5で導入）
+const coarse = matchMedia('(pointer: coarse)').matches;
 
 async function main() {
   const track = $('track'), stage = $('stage'), cv = $('cv');
@@ -25,17 +25,26 @@ async function main() {
 
   const state = { p: 0, t: 0, w: 0, width: 0, height: 0, dpr: 1, scale: 1 };
 
+  // ---- 品質ティア：?tier=T0..T3 で固定。未指定なら スマホ=T1 / それ以外=T2。実行中の自動切替はしない。
+  const tierById = (id) => TIERS.find((t) => t.id === id);
+  let tier = tierById((q.get('tier') || '').toUpperCase()) || tierById(defaultTier(stage.clientWidth || innerWidth, stage.clientHeight || innerHeight, coarse));
+  const snowMode = () => (q.get('snow') === 'normal' ? 'normal' : q.get('snow') === 'light' ? 'light' : (isPhone(stage.clientWidth || innerWidth, stage.clientHeight || innerHeight, coarse) ? 'light' : 'normal'));
+
   function fitSize() {
     const cssW = stage.clientWidth || innerWidth, cssH = stage.clientHeight || innerHeight;
     const dpr = Math.min(devicePixelRatio || 1, 3);
-    const nativePx = cssW * dpr * cssH * dpr;
-    const scale = Math.min(1, Math.sqrt((FIXED_MP * 1e6) / nativePx));
-    const w = Math.max(2, Math.round(cssW * dpr * scale)), h = Math.max(2, Math.round(cssH * dpr * scale));
-    renderer.setSize(w, h);
-    Object.assign(state, { width: w, height: h, dpr, scale, aspect: cssW / cssH });
+    const { w, h, scale } = fitBudget(cssW, cssH, dpr, tier.mp);
+    renderer.applyQuality({ w, h, samples: tier.samples, dof: tier.dof });
+    const mode = snowMode(); city.setSnowCount(SNOW[mode]);
+    Object.assign(state, { width: w, height: h, dpr, scale, aspect: cssW / cssH, snowMode: mode });
     state.w = portraitWeight(state.aspect);
     city.setLayoutWeight(state.w);
     dirty = true;
+  }
+  /** ティアを変更する（履歴は ?debug=1 パネルに残る）。 */
+  function setTier(id, reason = 'manual') {
+    const t = tierById(id); if (!t || t === tier) return;
+    dbg?.logTier(tier.id, t.id, reason); tier = t; fitSize();
   }
 
   let dirty = true;
@@ -57,7 +66,7 @@ async function main() {
   fitSize();
 
   const panelState = () => ({
-    tierLabel: `fixed ${FIXED_MP}MP (step2・ティア方式は未実装)`, width: state.width, height: state.height, dpr: state.dpr,
+    tierLabel: `${tier.id} 予算${tier.mp}MP MSAA${tier.samples} DoF${tier.dof ? 'あり' : 'なし'} 雪${SNOW[state.snowMode]}`, width: state.width, height: state.height, dpr: state.dpr,
     scale: state.scale, p: state.p, t: state.t, wPortrait: state.w,
     calls: renderer.lastInfo.calls, triangles: renderer.lastInfo.triangles, gpu,
   });
@@ -100,6 +109,7 @@ async function main() {
     /** p を直接指定して決定的に 1 フレーム描画（ambient は t に固定） */
     renderAtProgress(p) { pinned = p; state.p = p; state.t = tOfP(p); updateCaptions(p); renderer.renderAt(state.t, 0, state.t); dbg?.update(panelState()); },
     unpin() { pinned = null; },
+    setTier, tier: () => tier.id,
     renderer, city, THREE,
     /** 指定 p・アスペクト比のカメラ（検証用） */
     cameraAt(p, aspect) { const w = portraitWeight(aspect); return city.rig.sample(11 + tOfP(p), w); },
