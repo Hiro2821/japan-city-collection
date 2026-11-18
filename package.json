@@ -1,0 +1,17 @@
+{
+  "name": "japan-the-city-collection",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "JAPAN — THE CITY COLLECTION: 10 Cities. 10 Stories. One Japan.",
+  "config": {
+    "threeVersion": "0.187.0",
+    "threeNote": "index.html の THREE_VERSION と vendor/three(r187) を一致させる。npm run check:three で照合"
+  },
+  "scripts": {
+    "check:three": "node tools/check-three.mjs",
+    "selftest": "node tools/selftest.mjs",
+    "export": "node tools/export.mjs",
+    "export:preview": "node tools/export.mjs --scale 0.25 --preview"
+  }
+}

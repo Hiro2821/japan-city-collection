@@ -1,0 +1,143 @@
+{
+  "series": {
+    "title": "JAPAN — THE CITY COLLECTION",
+    "tagline": "10 Cities. 10 Stories. One Japan.",
+    "video": {
+      "width": 1920,
+      "height": 1080,
+      "fps": 30
+    }
+  },
+  "cities": [
+    {
+      "id": "sapporo",
+      "name": "札幌",
+      "englishName": "Sapporo",
+      "prefecture": "北海道",
+      "region": "北海道",
+      "description": "雪に包まれる北の大都市。大通公園とテレビ塔を望む冬の街並み。",
+      "videoPath": "videos/sapporo.webm",
+      "thumbnailPath": "thumbnails/sapporo.webp",
+      "displayOrder": 1,
+      "durationSec": 15,
+      "status": "ready"
+    },
+    {
+      "id": "sendai",
+      "name": "仙台",
+      "englishName": "Sendai",
+      "prefecture": "宮城県",
+      "region": "東北",
+      "description": "杜の都。定禅寺通のケヤキ並木と近代的な高層ビルが並ぶ緑の都市。",
+      "videoPath": "videos/sendai.webm",
+      "thumbnailPath": "thumbnails/sendai.webp",
+      "displayOrder": 2,
+      "durationSec": 15,
+      "status": "planned"
+    },
+    {
+      "id": "tokyo",
+      "name": "東京",
+      "englishName": "Tokyo",
+      "prefecture": "東京都",
+      "region": "関東",
+      "description": "ブルーアワーに輝く巨大都市。高層ビル群と交通網が織りなす躍動。",
+      "videoPath": "videos/tokyo.webm",
+      "thumbnailPath": "thumbnails/tokyo.webp",
+      "displayOrder": 3,
+      "durationSec": 15,
+      "status": "planned"
+    },
+    {
+      "id": "yokohama",
+      "name": "横浜",
+      "englishName": "Yokohama",
+      "prefecture": "神奈川県",
+      "region": "関東",
+      "description": "みなとみらいの高層ビル群と港、水面に映る都市の光。",
+      "videoPath": "videos/yokohama.webm",
+      "thumbnailPath": "thumbnails/yokohama.webp",
+      "displayOrder": 4,
+      "durationSec": 15,
+      "status": "planned"
+    },
+    {
+      "id": "kanazawa",
+      "name": "金沢",
+      "englishName": "Kanazawa",
+      "prefecture": "石川県",
+      "region": "中部",
+      "description": "兼六園、金沢城、ひがし茶屋街。夕景に包まれる受け継がれる日本の美。",
+      "videoPath": "videos/kanazawa.webm",
+      "thumbnailPath": "thumbnails/kanazawa.webp",
+      "displayOrder": 5,
+      "durationSec": 15,
+      "status": "planned"
+    },
+    {
+      "id": "nagoya",
+      "name": "名古屋",
+      "englishName": "Nagoya",
+      "prefecture": "愛知県",
+      "region": "中部",
+      "description": "名古屋城から名駅周辺の高層ビル群へ。ものづくりの力を映す都市。",
+      "videoPath": "videos/nagoya.webm",
+      "thumbnailPath": "thumbnails/nagoya.webp",
+      "displayOrder": 6,
+      "durationSec": 15,
+      "status": "planned"
+    },
+    {
+      "id": "kyoto",
+      "name": "京都",
+      "englishName": "Kyoto",
+      "prefecture": "京都府",
+      "region": "近畿",
+      "description": "五重塔と寺社、町家、山並み。夕暮れに沈む千年の都。",
+      "videoPath": "videos/kyoto.webm",
+      "thumbnailPath": "thumbnails/kyoto.webp",
+      "displayOrder": 7,
+      "durationSec": 15,
+      "status": "planned"
+    },
+    {
+      "id": "osaka",
+      "name": "大阪",
+      "englishName": "Osaka",
+      "prefecture": "大阪府",
+      "region": "近畿",
+      "description": "梅田の高層ビル群と道頓堀のネオン。眠らない都市の熱気。",
+      "videoPath": "videos/osaka.webm",
+      "thumbnailPath": "thumbnails/osaka.webp",
+      "displayOrder": 8,
+      "durationSec": 15,
+      "status": "planned"
+    },
+    {
+      "id": "hiroshima",
+      "name": "広島",
+      "englishName": "Hiroshima",
+      "prefecture": "広島県",
+      "region": "中国",
+      "description": "川が流れる水辺の都市。平和記念公園と瀬戸内の穏やかな風景。",
+      "videoPath": "videos/hiroshima.webm",
+      "thumbnailPath": "thumbnails/hiroshima.webp",
+      "displayOrder": 9,
+      "durationSec": 15,
+      "status": "planned"
+    },
+    {
+      "id": "fukuoka",
+      "name": "福岡",
+      "englishName": "Fukuoka",
+      "prefecture": "福岡県",
+      "region": "九州",
+      "description": "海と未来への玄関口。福岡タワーと百道浜、天神の都市景観。",
+      "videoPath": "videos/fukuoka.webm",
+      "thumbnailPath": "thumbnails/fukuoka.webp",
+      "displayOrder": 10,
+      "durationSec": 15,
+      "status": "planned"
+    }
+  ]
+}
