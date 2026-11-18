@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>SAPPORO — JAPAN — THE CITY COLLECTION</title>
+<link rel="stylesheet" href="styles-scroll.css">
+<script>
+  // Three.js の読み込み元（import map）。バージョンは 0.187.0 固定。
+  //   既定: jsDelivr CDN。?three=local でローカル(vendor/three)。CDN に届かない場合は自動でローカルへ切替。
+  window.THREE_VERSION = '0.187.0';
+  window.__threeSource = 'cdn';
+  window.__bootError = null;
+  (async function () {
+    const V = window.THREE_VERSION;
+    const cdn = `https://cdn.jsdelivr.net/npm/three@${V}/`;
+    const local = new URL('./vendor/three/', document.baseURI).href;
+    const want = new URLSearchParams(location.search).get('three') || 'cdn';
+    let base = want === 'local' ? local : cdn;
+    window.__threeSource = want === 'local' ? 'local' : 'cdn';
+    if (want !== 'local') {
+      try {
+        const ctl = new AbortController();
+        const to = setTimeout(() => ctl.abort(), 6000);
+        const r = await fetch(cdn + 'build/three.module.js', { method: 'HEAD', mode: 'cors', signal: ctl.signal });
+        clearTimeout(to);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+      } catch (e) {
+        base = local; window.__threeSource = 'local (CDN不通のため自動切替)';
+      }
+    }
+    const map = { imports: { three: base + 'build/three.module.js', 'three/addons/': base + 'examples/jsm/' } };
+    const s = document.createElement('script');
+    s.type = 'importmap'; s.textContent = JSON.stringify(map);
+    document.head.appendChild(s);
+    try { await import('./src/scroll/app.js'); }
+    catch (e) { window.__bootError = String(e && e.stack || e); document.getElementById('loadMsg').textContent = '起動に失敗: ' + e; console.error(e); }
+  })();
+</script>
+</head>
+<body>
+<main id="track">
+  <div id="stage">
+    <canvas id="cv" width="320" height="568"></canvas>
+    <div class="loading" id="loading"><div class="spin"></div><p id="loadMsg">読み込み中…</p></div>
+  </div>
+</main>
+</body>
+</html>
