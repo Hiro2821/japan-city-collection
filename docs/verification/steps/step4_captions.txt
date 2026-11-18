@@ -1,0 +1,22 @@
+{"sweep":{"stepP":0.0025,"maxOpacitySum":1,"samplesWithOverlap":0,"maxOpacityJumpPerStep":0.124,"gapsBetweenWindows":[0.03,0.02,0.02]}}
+[portrait] 読み込み直後(p=0・実スクロール): cap-sapporo:1 cap-tower:0 cap-odori:0 cap-teine:0
+[portrait] p=0: SAPPORO札幌=1.00
+[portrait] p=0.1: SAPPORO札幌=1.00
+[portrait] p=0.25: さっぽろテレビ塔=1.00
+[portrait] p=0.47: （なし・すき間）
+[portrait] p=0.5: 大通公園=1.00
+[portrait] p=0.53: 大通公園=1.00
+[portrait] p=0.75: 手稲山の方へ=1.00
+[portrait] p=0.94: 手稲山の方へ=1.00
+[portrait] p=1: 手稲山の方へ=1.00
+[landscape] 読み込み直後(p=0・実スクロール): cap-sapporo:1 cap-tower:0 cap-odori:0 cap-teine:0
+[landscape] (同一コードでの先行実行の結果。再実行は端末側のタイムアウトで途中終了したため先行実行の出力を記録)
+[landscape] p=0: SAPPORO札幌=1.00
+[landscape] p=0.1: SAPPORO札幌=1.00
+[landscape] p=0.25: さっぽろテレビ塔=1.00
+[landscape] p=0.47: （なし・すき間）
+[landscape] p=0.5: 大通公園=1.00
+[landscape] p=0.53: 大通公園=1.00
+[landscape] p=0.75: 手稲山の方へ=1.00
+[landscape] p=0.94: 手稲山の方へ=1.00
+[landscape] p=1: 手稲山の方へ=1.00
