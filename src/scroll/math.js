@@ -13,3 +13,15 @@ export const tOfP = (p) => Math.min(1, clamp(p) / SPAN) * DURATION;
 
 /** アスペクト比（幅/高さ）→ 縦画面経路の重み。≤0.88 で 1（縦）、≥1.12 で 0（横）、中間は滑らかに混合。 */
 export const portraitWeight = (aspect) => 1 - smoothstep(0.88, 1.12, aspect);
+
+/** キャプションの表示窓（進行度 p）。窓の間のすき間は 0.02〜0.03。窓は重ならない。 */
+export const CAPTIONS = [
+  { id: 'cap-sapporo', a: -0.05, b: 0.17 },  // SAPPORO / 札幌       … p=0, 0.10
+  { id: 'cap-tower', a: 0.20, b: 0.45 },     // さっぽろテレビ塔     … p=0.25
+  { id: 'cap-odori', a: 0.47, b: 0.70 },     // 大通公園             … p=0.50
+  { id: 'cap-teine', a: 0.72, b: 1.08 },     // 手稲山の方へ         … p=0.75, 0.94, 1.0
+];
+export const CAPTION_FADE = 0.03; // 窓の両端のフェード幅（窓の内側に取るので、すき間は変わらない）
+
+/** 窓 (a,b) に対する p での不透明度 0..1。 */
+export const windowOpacity = (a, b, p, f = CAPTION_FADE) => smoothstep(a, a + f, p) * (1 - smoothstep(b - f, b, p));

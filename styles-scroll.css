@@ -9,3 +9,11 @@ html, body { margin: 0; background: var(--bg); color: var(--text); font-family: 
 .loading.hide { opacity: 0; pointer-events: none; }
 .spin { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #1d2434; border-top-color: var(--accent); animation: sp 1s linear infinite; }
 @keyframes sp { to { transform: rotate(360deg); } }
+
+/* キャプション：画面下部。pointer-events なし（スクロールを妨げない）。opacity は app.js が p から設定する。 */
+.captions { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 max(22px, env(safe-area-inset-left)) max(9svh, calc(env(safe-area-inset-bottom) + 28px)); pointer-events: none;
+  background: linear-gradient(to top, rgba(4, 8, 18, .55), rgba(4, 8, 18, 0)); padding-top: 18svh; min-height: 30svh; }
+.cap { position: absolute; left: max(22px, env(safe-area-inset-left)); right: 22px; bottom: max(9svh, calc(env(safe-area-inset-bottom) + 28px)); opacity: 0; will-change: opacity, transform; text-shadow: 0 1px 14px rgba(0, 0, 0, .6), 0 0 2px rgba(0, 0, 0, .5); }
+.cap h2 { margin: 0; font-weight: 300; font-size: clamp(24px, 7.2vw, 46px); letter-spacing: .16em; line-height: 1.2; }
+.cap p { margin: 6px 0 0; font-size: clamp(12px, 3.4vw, 16px); letter-spacing: .24em; color: #dfe6f4; opacity: .9; }
+@media (min-aspect-ratio: 1/1) { .cap h2 { font-size: clamp(24px, 4.2vw, 48px); } .cap p { font-size: clamp(12px, 1.6vw, 16px); } }

@@ -7,7 +7,7 @@ export class DebugPanel {
     this.el.id = 'dbg';
     this.el.setAttribute('aria-hidden', 'true');
     this.el.style.cssText = [
-      'position:fixed', 'left:max(6px,env(safe-area-inset-left))', 'bottom:max(6px,env(safe-area-inset-bottom))', 'z-index:99',
+      'position:fixed', 'left:max(6px,env(safe-area-inset-left))', 'top:max(6px,env(safe-area-inset-top))', 'z-index:99',
       'margin:0', 'padding:6px 8px', 'max-width:calc(100vw - 12px)', 'box-sizing:border-box',
       'font:10px/1.35 ui-monospace,Menlo,monospace', 'color:#cfe', 'background:rgba(0,0,0,.62)',
       'border-radius:6px', 'white-space:pre-wrap', 'word-break:break-all', 'pointer-events:auto', 'user-select:text',

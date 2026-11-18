@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { ScrollRenderer } from './renderer.js';
 import { SapporoScrollScene } from './scene.js';
 import { DebugPanel } from './debug.js';
-import { progressFromScroll, tOfP, portraitWeight } from './math.js';
+import { progressFromScroll, tOfP, portraitWeight, CAPTIONS, windowOpacity } from './math.js';
 
 const $ = (id) => document.getElementById(id);
 const q = new URLSearchParams(location.search);
@@ -61,6 +61,19 @@ async function main() {
     scale: state.scale, p: state.p, t: state.t, wPortrait: state.w,
     calls: renderer.lastInfo.calls, triangles: renderer.lastInfo.triangles, gpu,
   });
+  // ---- キャプション：不透明度は p だけで決まる（同じ p なら同じ見え方。逆スクロールでも対称）
+  const capEls = CAPTIONS.map((c) => ({ ...c, el: $(c.id), last: -1 }));
+  const captionOpacity = (p) => capEls.map((c) => windowOpacity(c.a, c.b, p));
+  function updateCaptions(p) {
+    for (const c of capEls) {
+      const o = windowOpacity(c.a, c.b, p);
+      if (Math.abs(o - c.last) < 0.004) continue;
+      c.last = o;
+      c.el.style.opacity = o.toFixed(3);
+      c.el.style.transform = `translateY(${((1 - o) * 8).toFixed(1)}px)`;
+    }
+  }
+
   const clock0 = performance.now();
   let frame = 0;
   function loop(now) {
@@ -69,6 +82,7 @@ async function main() {
     if (!resizing) pStable = pinned ?? readP();
     state.p = pinned ?? pStable;
     state.t = tOfP(state.p);
+    updateCaptions(state.p);
     // 雪・車などは実時間で動かし、スクロールを止めても画面が生きているようにする
     const ambient = pinned !== null ? state.t : (now - clock0) / 1000;
     renderer.renderAt(state.t, frame++, ambient);
@@ -84,12 +98,14 @@ async function main() {
   window.__scroll = {
     state: () => ({ ...state }),
     /** p を直接指定して決定的に 1 フレーム描画（ambient は t に固定） */
-    renderAtProgress(p) { pinned = p; state.p = p; state.t = tOfP(p); renderer.renderAt(state.t, 0, state.t); dbg?.update(panelState()); },
+    renderAtProgress(p) { pinned = p; state.p = p; state.t = tOfP(p); updateCaptions(p); renderer.renderAt(state.t, 0, state.t); dbg?.update(panelState()); },
     unpin() { pinned = null; },
     renderer, city, THREE,
     /** 指定 p・アスペクト比のカメラ（検証用） */
     cameraAt(p, aspect) { const w = portraitWeight(aspect); return city.rig.sample(11 + tOfP(p), w); },
     pStable: () => pStable,
+    captionOpacity,
+    captionDom: () => capEls.map((c) => ({ id: c.id, opacity: +getComputedStyle(c.el).opacity, text: c.el.textContent })),
   };
   window.__ready = true;
 }
