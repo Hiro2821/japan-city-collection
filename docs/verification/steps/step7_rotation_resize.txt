@@ -1,0 +1,12 @@
+{"step":"portrait p=0.5","p":0.0467,"stable":0.5,"pFromScroll":0.5,"scrollY":2110}
+{"step":"→ landscape","p":0.1867,"stable":0.5,"pFromScroll":0.5,"scrollY":975}
+{"step":"→ portrait","p":0.3267,"stable":0.5,"pFromScroll":0.5,"scrollY":2110}
+{"step":"portrait p=0.25","p":0.3267,"stable":0.25,"pFromScroll":0.25,"scrollY":1055}
+{"step":"→ landscape","p":0.2609,"stable":0.25,"pFromScroll":0.2503,"scrollY":488}
+{"step":"→ portrait","p":0.2518,"stable":0.2503,"pFromScroll":0.2502,"scrollY":1056}
+{"step":"portrait p=0.9","p":0.2977,"stable":0.9,"pFromScroll":0.9,"scrollY":3798}
+{"step":"→ landscape","p":0.4377,"stable":0.9,"pFromScroll":0.9,"scrollY":1755}
+{"step":"→ portrait","p":0.5777,"stable":0.9,"pFromScroll":0.9,"scrollY":3798}
+{"step":"portrait p=0.5（高さ変化テスト）","p":0.5777,"stable":0.5,"pFromScroll":0.5,"scrollY":2110}
+{"step":"→ 高さ 844→744","p":0.5111,"stable":0.5,"pFromScroll":0.5,"scrollY":1860}
+{"step":"→ 高さ 744→844","p":0.5016,"stable":0.5,"pFromScroll":0.5,"scrollY":2110}

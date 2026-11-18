@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { ScrollRenderer } from './renderer.js';
 import { SapporoScrollScene } from './scene.js';
 import { DebugPanel } from './debug.js';
-import { progressFromScroll, tOfP, portraitWeight, CAPTIONS, windowOpacity, TIERS, SNOW, fitBudget, isPhone, defaultTier } from './math.js';
+import { progressFromScroll, tOfP, portraitWeight, CAPTIONS, windowOpacity, TIERS, SNOW, fitBudget, isPhone, defaultTier, follow } from './math.js';
 
 const $ = (id) => document.getElementById(id);
 const q = new URLSearchParams(location.search);
@@ -54,20 +54,26 @@ async function main() {
 
   // 回転・リサイズで p が飛ばないようにする（旧版には 0.5→0.81 に飛ぶバグがあった）。
   //   リサイズ中は直前の安定した p（pStable）を保持して描画し、レイアウトが落ち着いたらその p へスクロール位置を戻す。
-  let pStable = 0, resizing = false, rzT = 0;
+  let pStable = 0, pShown = null, resizing = false, rzT = 0;
   const applyP = (p) => { const max = track.offsetHeight - stage.offsetHeight; window.scrollTo(0, p * max); };
+  let lastW = 0, lastH = 0;
   const onResize = () => {
+    // ステージ（svh/幅）の大きさが変わらないリサイズ（iOS のアドレスバー伸縮など）では何もしない。
+    // scrollTo で慣性スクロールを止めたり、再描画サイズを作り直したりしないため。
+    if (stage.clientWidth === lastW && stage.clientHeight === lastH) return;
     if (!resizing) { resizing = true; }
     clearTimeout(rzT);
     rzT = setTimeout(() => { fitSize(); applyP(pStable); resizing = false; }, 160);
+    lastW = stage.clientWidth; lastH = stage.clientHeight;
   };
   addEventListener('resize', onResize);
   addEventListener('orientationchange', onResize);
   fitSize();
+  lastW = stage.clientWidth; lastH = stage.clientHeight;
 
   const panelState = () => ({
     tierLabel: `${tier.id} 予算${tier.mp}MP MSAA${tier.samples} DoF${tier.dof ? 'あり' : 'なし'} 雪${SNOW[state.snowMode]}`, width: state.width, height: state.height, dpr: state.dpr,
-    scale: state.scale, p: state.p, t: state.t, wPortrait: state.w,
+    scale: state.scale, p: state.p, target: state.target, t: state.t, wPortrait: state.w,
     calls: renderer.lastInfo.calls, triangles: renderer.lastInfo.triangles, gpu,
   });
   // ---- キャプション：不透明度は p だけで決まる（同じ p なら同じ見え方。逆スクロールでも対称）
@@ -88,8 +94,10 @@ async function main() {
   function loop(now) {
     requestAnimationFrame(loop);
     if (FREEZE) return;
-    if (!resizing) pStable = pinned ?? readP();
-    state.p = pinned ?? pStable;
+    if (!resizing) pStable = pinned ?? readP();       // pStable = スクロール位置から求めた目標 p
+    const dt = Math.min(0.1, Math.max(0, (now - (loop.last ?? now)) / 1000)); loop.last = now;
+    pShown = pinned !== null || pShown === null ? pStable : follow(pShown, pStable, dt); // カメラ側の p に減衰（行き過ぎ・ワープなし）
+    state.p = pShown; state.target = pStable;
     state.t = tOfP(state.p);
     updateCaptions(state.p);
     // 雪・車などは実時間で動かし、スクロールを止めても画面が生きているようにする
@@ -107,7 +115,7 @@ async function main() {
   window.__scroll = {
     state: () => ({ ...state }),
     /** p を直接指定して決定的に 1 フレーム描画（ambient は t に固定） */
-    renderAtProgress(p) { pinned = p; state.p = p; state.t = tOfP(p); updateCaptions(p); renderer.renderAt(state.t, 0, state.t); dbg?.update(panelState()); },
+    renderAtProgress(p) { pinned = p; pShown = p; state.p = p; state.t = tOfP(p); updateCaptions(p); renderer.renderAt(state.t, 0, state.t); dbg?.update(panelState()); },
     unpin() { pinned = null; },
     setTier, tier: () => tier.id,
     renderer, city, THREE,

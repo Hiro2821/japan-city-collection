@@ -45,7 +45,7 @@ export class DebugPanel {
       `FPS ${avg.toFixed(1)}  最大間隔 ${maxGap.toFixed(0)}ms  (直近1秒)`,
       `tier ${s.tierLabel}${this.history.length ? '  履歴: ' + this.history.join(' | ') : '  履歴: なし'}`,
       `canvas ${s.width}x${s.height} (${(s.width * s.height / 1e6).toFixed(2)}MP)  DPR ${s.dpr}  scale ${s.scale.toFixed(3)}`,
-      `p ${s.p.toFixed(4)}  t ${s.t.toFixed(3)}s  layout 縦${(s.wPortrait * 100).toFixed(0)}%`,
+      `p ${s.p.toFixed(4)}${s.target !== undefined ? ' →目標 ' + s.target.toFixed(4) : ''}  t ${s.t.toFixed(3)}s  layout 縦${(s.wPortrait * 100).toFixed(0)}%`,
       `GL calls ${s.calls}  tris ${s.triangles}`,
       `GPU ${s.gpu}`,
     ];

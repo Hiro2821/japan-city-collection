@@ -19,5 +19,11 @@ for (const p0 of [0.5, 0.25, 0.9]) {
   await pg.setViewportSize({ width: 844, height: 390 }); await pg.waitForTimeout(1500); out.push({ step: '→ landscape', ...(await P()) });
   await pg.setViewportSize({ width: 390, height: 844 }); await pg.waitForTimeout(1500); out.push({ step: '→ portrait', ...(await P()) });
 }
+// 高さだけの変化（アドレスバー伸縮の疑似。ヘッドレスでは svh も変わるため、p 維持（pStable）の経路を検証する）
+for (const p0 of [0.5]) {
+  await setP(p0); await pg.waitForTimeout(600); out.push({ step: `portrait p=${p0}（高さ変化テスト）`, ...(await P()) });
+  await pg.setViewportSize({ width: 390, height: 744 }); out.push({ step: '→ 高さ 844→744', ...(await P()) });
+  await pg.setViewportSize({ width: 390, height: 844 }); out.push({ step: '→ 高さ 744→844', ...(await P()) });
+}
 console.log(out.map((o) => JSON.stringify(o)).join('\n'));
 await b.close(); srv.close();

@@ -45,3 +45,15 @@ export function fitBudget(cssW, cssH, dpr, mp) {
 export const isPhone = (cssW, cssH, coarse) => !!coarse && Math.min(cssW, cssH) < 700;
 /** 初期ティア：スマホ T1、それ以外 T2。?tier= で上書きできる（動的な自動調整は行わない）。 */
 export const defaultTier = (cssW, cssH, coarse) => (isPhone(cssW, cssH, coarse) ? 'T1' : 'T2');
+
+// ---- スクロール追従（カメラ側の p の減衰）。ネイティブスクロールは奪わず、表示用の p を目標 p に追従させる。
+//   指数追従（行き過ぎなし）＋最大速度制限（150ms あたり最大 0.07）。0..1 にクランプ。
+export const FOLLOW = { rate: 6.5, vmax: 0.07 / 0.15 };
+export function follow(shown, target, dt, { rate, vmax } = FOLLOW) {
+  const d = target - shown;
+  if (Math.abs(d) < 1e-5) return clamp(target);
+  let step = d * (1 - Math.exp(-rate * dt));
+  const lim = vmax * dt;
+  if (Math.abs(step) > lim) step = Math.sign(step) * lim;
+  return clamp(shown + step);
+}
