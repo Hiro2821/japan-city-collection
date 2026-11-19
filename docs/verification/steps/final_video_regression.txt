@@ -1,0 +1,8 @@
+動画版の不変確認（simulation: ヘッドレス Chrome / SwiftShader）
+- index.html md5 = 90e9408db6f981a210fb1aeab7a5266b（バックアップ commit 84eb4c8 と同一）
+- src/main.js  md5 = 6e280d60ae58a289b9249b48016a7a53（同一）
+- 84eb4c8（Nov 15 時点・無修正バックアップ）以降、動画版に関わるファイル（src/ の scroll 以外・vendor・index.html・styles.css）の変更なし。変更は README.md と package.json のみ（スクロール版の記述・build:scroll 追加）。
+- 動画フレーム比較（tools/export.mjs --city sapporo --stills 3.2,5.5,6.3、1920×1080）: バックアップ版と現行版で
+    3.2 s (frame 96)  : 画素差分 0
+    5.5 s (frame 165) : 画素差分 0
+    6.3 s (frame 189) : 画素差分 0
