@@ -17,7 +17,7 @@ async function main() {
   const m = meta.cities.find((c) => c.id === 'sapporo');
 
   const renderer = new ScrollRenderer(cv, { width: 320, height: 568 });
-  const city = new SapporoScrollScene(m, m.displayOrder, meta.cities.length, { renderer: renderer.gl });
+  const city = new SapporoScrollScene(m, m.displayOrder, meta.cities.length, { renderer: renderer.gl, tiled: q.get('tiles') === '0' ? false : (q.get('tiles') || true) });
   await city.build();
   renderer.setCity(city);
   const dbg = DEBUG ? new DebugPanel() : null;
@@ -114,6 +114,7 @@ async function main() {
   // ---- 検証用フック（ヘッドレス撮影・確認用。UI には出さない）
   window.__scroll = {
     state: () => ({ ...state }),
+    tileStats: () => city.tileStats ?? null,
     /** p を直接指定して決定的に 1 フレーム描画（ambient は t に固定） */
     renderAtProgress(p) { pinned = p; pShown = p; state.p = p; state.t = tOfP(p); updateCaptions(p); renderer.renderAt(state.t, 0, state.t); dbg?.update(panelState()); },
     unpin() { pinned = null; },

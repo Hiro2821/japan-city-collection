@@ -1,0 +1,74 @@
+[
+ {
+  "layout": "portrait",
+  "p": 0,
+  "calls": 185,
+  "triangles": 2076511,
+  "tier": "T1",
+  "size": "504x1091"
+ },
+ {
+  "layout": "portrait",
+  "p": 0.1,
+  "calls": 126,
+  "triangles": 1057041,
+  "tier": "T1",
+  "size": "504x1091"
+ },
+ {
+  "layout": "portrait",
+  "p": 0.25,
+  "calls": 118,
+  "triangles": 951957,
+  "tier": "T1",
+  "size": "504x1091"
+ },
+ {
+  "layout": "portrait",
+  "p": 0.47,
+  "calls": 76,
+  "triangles": 976166,
+  "tier": "T1",
+  "size": "504x1091"
+ },
+ {
+  "layout": "portrait",
+  "p": 0.5,
+  "calls": 70,
+  "triangles": 976154,
+  "tier": "T1",
+  "size": "504x1091"
+ },
+ {
+  "layout": "portrait",
+  "p": 0.53,
+  "calls": 74,
+  "triangles": 984188,
+  "tier": "T1",
+  "size": "504x1091"
+ },
+ {
+  "layout": "portrait",
+  "p": 0.75,
+  "calls": 155,
+  "triangles": 1751275,
+  "tier": "T1",
+  "size": "504x1091"
+ },
+ {
+  "layout": "portrait",
+  "p": 0.94,
+  "calls": 184,
+  "triangles": 1737794,
+  "tier": "T1",
+  "size": "504x1091"
+ },
+ {
+  "layout": "portrait",
+  "p": 1,
+  "calls": 184,
+  "triangles": 1737794,
+  "tier": "T1",
+  "size": "504x1091"
+ }
+]
