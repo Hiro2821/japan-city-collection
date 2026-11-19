@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { ScrollRenderer } from './renderer.js';
 import { SapporoScrollScene } from './scene.js';
 import { DebugPanel } from './debug.js';
+import { hazeFromQuery } from './haze.js';
 import { progressFromScroll, tOfP, portraitWeight, CAPTIONS, windowOpacity, TIERS, SNOW, fitBudget, isPhone, defaultTier, follow } from './math.js';
 
 const $ = (id) => document.getElementById(id);
@@ -17,7 +18,7 @@ async function main() {
   const m = meta.cities.find((c) => c.id === 'sapporo');
 
   const renderer = new ScrollRenderer(cv, { width: 320, height: 568 });
-  const city = new SapporoScrollScene(m, m.displayOrder, meta.cities.length, { renderer: renderer.gl, tiled: q.get('tiles') === '0' ? false : (q.get('tiles') || true) });
+  const city = new SapporoScrollScene(m, m.displayOrder, meta.cities.length, { renderer: renderer.gl, tiled: q.get('tiles') === '0' ? false : (q.get('tiles') || true), haze: hazeFromQuery(q) });
   await city.build();
   renderer.setCity(city);
   const dbg = DEBUG ? new DebugPanel() : null;
@@ -74,7 +75,7 @@ async function main() {
   const panelState = () => ({
     tierLabel: `${tier.id} 予算${tier.mp}MP MSAA${tier.samples} DoF${tier.dof ? 'あり' : 'なし'} 雪${SNOW[state.snowMode]}`, width: state.width, height: state.height, dpr: state.dpr,
     scale: state.scale, p: state.p, target: state.target, t: state.t, wPortrait: state.w,
-    calls: renderer.lastInfo.calls, triangles: renderer.lastInfo.triangles, gpu,
+    calls: renderer.lastInfo.calls, triangles: renderer.lastInfo.triangles, gpu, haze: city.haze?.cfg,
   });
   // ---- キャプション：不透明度は p だけで決まる（同じ p なら同じ見え方。逆スクロールでも対称）
   const capEls = CAPTIONS.map((c) => ({ ...c, el: $(c.id), last: -1 }));

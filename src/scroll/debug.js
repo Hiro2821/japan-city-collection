@@ -47,6 +47,7 @@ export class DebugPanel {
       `canvas ${s.width}x${s.height} (${(s.width * s.height / 1e6).toFixed(2)}MP)  DPR ${s.dpr}  scale ${s.scale.toFixed(3)}`,
       `p ${s.p.toFixed(4)}${s.target !== undefined ? ' →目標 ' + s.target.toFixed(4) : ''}  t ${s.t.toFixed(3)}s  layout 縦${(s.wPortrait * 100).toFixed(0)}%`,
       `GL calls ${s.calls}  tris ${s.triangles}`,
+      s.haze ? `haze ×${s.haze.mult}${s.haze.mult === 0 ? '(無効)' : ''}  開始 ${s.haze.start}m 到達 ${s.haze.end}m 上限 ${s.haze.strength}（山 ×${s.haze.mountain}） 彩度減 ${s.haze.desat}` : 'haze なし',
       `GPU ${s.gpu}`,
     ];
     this.text = lines.join('\n');
