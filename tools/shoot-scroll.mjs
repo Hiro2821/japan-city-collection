@@ -25,6 +25,7 @@ const SIZES = {
 const a = process.argv.slice(2);
 const get = (k, d) => { const i = a.indexOf('--' + k); return i >= 0 ? a[i + 1] : d; };
 const out = get('out', 'shots');
+const metrics = [];
 const sizes = get('sizes', 'portrait,landscape').split(',');
 const ps = get('ps', '0,0.1,0.25,0.47,0.5,0.53,0.75,0.94,1').split(',').map(Number);
 const query = get('query', '');
@@ -66,8 +67,10 @@ try {
       }
       const f = path.join(out, `${name}_p${String(Math.round(p * 1000)).padStart(4, '0')}.png`);
       await page.screenshot({ path: f });
-      console.log('saved', f);
+      const m = await page.evaluate(() => { const i = window.__scroll.renderer.lastInfo; return { calls: i.calls, triangles: i.triangles, tier: window.__scroll.tier(), size: `${window.__scroll.state().width}x${window.__scroll.state().height}` }; });
+      metrics.push({ layout: name, p, ...m });
+      console.log('saved', f, JSON.stringify(m));
     }
     await ctx.close();
   }
-} finally { await browser.close(); srv.close(); }
+} finally { fs.writeFileSync(path.join(out, `metrics_${sizes.join('-')}.json`), JSON.stringify(metrics, null, 1)); await browser.close(); srv.close(); }
