@@ -8,6 +8,7 @@ export class ScrollRenderer extends CityRenderer {
     super(stage, opts);
     this.gl.info.autoReset = false; // composer は 1 フレームに複数回 render するため、フレーム単位で集計する
     this.lastInfo = { calls: 0, triangles: 0 };
+    this.grade = null;   // ScrollGrade（app.js が設定。null なら変更前と同じ）
   }
 
   /** 描画サイズ・MSAA・DoF の有無を設定する（MSAA が変わるときは合成チェーンを作り直す）。 */
@@ -40,7 +41,7 @@ export class ScrollRenderer extends CityRenderer {
     const proj = cam.projectionMatrix.elements[5] * 0.5 * this.height;
     city.onBeforeRender?.({ t: ambientT, frame, projScale: proj, camera: cam });
 
-    this.gl.toneMappingExposure = f.exposure;
+    this.gl.toneMappingExposure = f.exposure * (this.grade?.enabled ? this.grade.exposureGain(t) : 1);
     this.bloomPass.strength = f.bloom;
     this.bloomPass.radius = f.bloomRadius ?? 0.7;
     this.bloomPass.threshold = f.bloomThreshold ?? 0.9;
@@ -53,6 +54,8 @@ export class ScrollRenderer extends CityRenderer {
     g.uFade.value = 1; // スクロール版は黒フェードなし
     g.uSeed.value = frame % 997;
     Object.entries(city.look.grade ?? {}).forEach(([k, v]) => { if (g[k]) (g[k].value.isColor ? g[k].value.set(v) : (g[k].value = v)); });
+
+    this.grade?.apply(t, g);
 
     if (this._shadowDirty) { this.gl.shadowMap.needsUpdate = true; this._shadowDirty = false; }
     this.gl.info.reset();
