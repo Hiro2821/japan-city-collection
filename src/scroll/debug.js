@@ -48,7 +48,7 @@ export class DebugPanel {
       `p ${s.p.toFixed(4)}${s.target !== undefined ? ' →目標 ' + s.target.toFixed(4) : ''}  t ${s.t.toFixed(3)}s  layout 縦${(s.wPortrait * 100).toFixed(0)}%`,
       `GL calls ${s.calls}  tris ${s.triangles}`,
       s.haze ? `haze ×${s.haze.mult}${s.haze.mult === 0 ? '(無効)' : ''}  開始 ${s.haze.start}m 到達 ${s.haze.end}m 上限 ${s.haze.strength}（山 ×${s.haze.mountain}） 彩度減 ${s.haze.desat}` : 'haze なし',
-      s.grade ? `grade ×${s.grade.cfg.mult}${s.grade.cfg.mult === 0 ? '(無効)' : ''}  トーンマップ ${s.grade.tone}  露出 ×${(s.grade.now.exposure ?? 1).toFixed(3)} (昼${s.grade.cfg.expDay}→夕${s.grade.cfg.expDusk})  夕景度 ${(s.grade.now.dusk ?? 0).toFixed(2)}  ビネット ${s.grade.vig ?? '-'}` : '',
+      s.grade ? `grade ×${s.grade.cfg.mult}${s.grade.cfg.mult === 0 ? '(無効)' : ''}  トーンマップ ${s.grade.tone}  露出 ×${(s.grade.now.exposure ?? 1).toFixed(3)} (昼${s.grade.cfg.expDay}→夕${s.grade.cfg.expDusk})  夕景度 ${(s.grade.now.dusk ?? 0).toFixed(2)}  ビネット ${s.grade.vig ?? "-"}` : '',
       `GPU ${s.gpu}`,
     ];
     this.text = lines.join('\n');

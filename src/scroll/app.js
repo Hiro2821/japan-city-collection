@@ -77,7 +77,7 @@ async function main() {
   const panelState = () => ({
     tierLabel: `${tier.id} 予算${tier.mp}MP MSAA${tier.samples} DoF${tier.dof ? 'あり' : 'なし'} 雪${SNOW[state.snowMode]}`, width: state.width, height: state.height, dpr: state.dpr,
     scale: state.scale, p: state.p, target: state.target, t: state.t, wPortrait: state.w,
-    calls: renderer.lastInfo.calls, triangles: renderer.lastInfo.triangles, gpu, haze: city.haze?.cfg, grade: { cfg: renderer.grade.cfg, now: renderer.grade.now, tone: toneName(renderer.gl) },
+    calls: renderer.lastInfo.calls, triangles: renderer.lastInfo.triangles, gpu, haze: city.haze?.cfg, grade: { cfg: renderer.grade.cfg, now: renderer.grade.now, vig: renderer.grade.now.vig?.toFixed?.(2), tone: toneName(renderer.gl) },
   });
   // ---- キャプション：不透明度は p だけで決まる（同じ p なら同じ見え方。逆スクロールでも対称）
   const capEls = CAPTIONS.map((c) => ({ ...c, el: $(c.id), last: -1 }));

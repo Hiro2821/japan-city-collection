@@ -15,6 +15,7 @@ export const GRADE_DEFAULT = {
   highDusk: [1.075, 1.0, 0.905],             // ハイライトの色（暖色）
   shadowDusk: [0.035, 0.03, 0.10],           // 影の色（ティール→赤みを帯びた青紫。ピンクの空と同系にする）
   satDusk: 1.075,                            // 彩度
+  vig: 0.20,                                 // ビネット強さ（シーン既定 0.30 → 0.20。?vig= で上書き、?grade=0 で 0.30 に戻る）
 };
 
 /** URL（?grade= 倍率, ?gradeExpDay= ?gradeExpDusk= ?vig= …）から設定を作る。 */
@@ -25,6 +26,7 @@ export function gradeFromQuery(q) {
   return {
     mult: isFinite(mult) ? mult : 1,
     expDay: num('gradeExpDay', GRADE_DEFAULT.expDay), expDusk: num('gradeExpDusk', GRADE_DEFAULT.expDusk),
+    vig: q.has('vig') && isFinite(parseFloat(q.get('vig'))) ? parseFloat(q.get('vig')) : GRADE_DEFAULT.vig,
     rampFrom: GRADE_DEFAULT.rampFrom, rampTo: GRADE_DEFAULT.rampTo,
   };
 }
@@ -45,8 +47,10 @@ export class ScrollGrade {
   /** renderAt の中で、コンポーザのグレード uniform を設定した後に呼ぶ。 */
   apply(t, g /* gradePass.uniforms */) {
     if (!this.enabled) return;
+    if (this.cfg.vig !== null) g.uVig.value = this.cfg.vig;
+    this.now = { vig: g.uVig.value };
     const u = this.dusk(t);
-    this.now = { exposure: this.exposureGain(t), dusk: u };
+    this.now = { vig: g.uVig.value, exposure: this.exposureGain(t), dusk: u };
     const k = u * this.cfg.mult;
     const lerpC = (col, to) => col.setRGB(mixN(col.r, to[0], k), mixN(col.g, to[1], k), mixN(col.b, to[2], k));
     if (g.uHighTint) lerpC(g.uHighTint.value, this.cfg.highDusk);
