@@ -1,6 +1,7 @@
 // test-captions.mjs — キャプションの表示/非表示・重なり・すき間・急な出入りを p で検証する（ヘッドレス Chrome）
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'; import { fileURLToPath } from 'node:url'; import { createRequire } from 'node:module';
-import { CAPTIONS, windowOpacity } from '../src/scroll/math.js';
+import { windowOpacity } from '../src/scroll/math.js';
+import { CAPTIONS } from '../src/scroll/cities/sapporo/captions.js';
 const { chromium } = createRequire(import.meta.url)('/opt/npm-tools/node_modules/playwright');
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // ---- 1) 純粋関数による全域スイープ

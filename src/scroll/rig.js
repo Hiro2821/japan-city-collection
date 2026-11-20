@@ -1,44 +1,15 @@
-// scroll/rig.js — スクロール版のカメラ経路（Three.js 非依存の純粋な数値計算。Node でも検証できる）
+// scroll/rig.js — スクロール版のカメラ経路の「仕組み」（都市共通。Three.js 非依存の純粋な数値計算。Node でも検証できる）
+//   都市ごとの経路データ（キー・補正・縦画面の周回仕様）は cities/<id>/camera.js が持ち、ScrollRig に渡す。
 //
-//   横画面: 動画版（src/scenes/sapporo.js の rig、グローバル 11–18 秒）と同一の経路。
-//           ただし p = 0.40〜0.60 の区間だけ、位置・注視点に滑らかな補正（LANDSCAPE_ADJ）を加える。
-//           補正は区間の両端で値も傾きも 0 になるので、区間外は動画版と完全に一致する。
-//   縦画面: 塔の軸(-90, 0)を画面中央に保ち、塔のまわりを周回する専用経路。FOV 拡大だけには頼らない。
+//   横画面: 時間キーの経路（CameraRig）＋ 進行度 p の補正窓（adj。窓の両端で値も傾きも 0 → 窓の外は基本経路と一致）。
+//   縦画面: 軸（x,z）を画面中央に保ち、軸のまわりを周回する経路（ArcRig。経路長ベース・速度重み付き Catmull-Rom）。
 //   混合  : アスペクト比 ≤0.88 で縦、≥1.12 で横、中間は位置・注視点・FOV を線形混合（重みは smoothstep）。
 import { CameraRig } from '../camera.js';
 import { SPAN, DURATION, clamp } from './math.js';
 
-export const GLOBAL0 = 11; // SCENE 03 のグローバル開始時刻（秒）
-export const TOWER = { x: -90, z: 0, tipY: 147.2, glowY: 149 }; // 塔軸と、アンテナ先端・ビーコン中心の高さ(m)
-
 const warp = (u) => { const a = u * u * (3 - 2 * u), b = 1 - (1 - u) * (1 - u); return 0.5 * a + 0.5 * b; };
 
-// ---- 横画面のキー（グローバル時刻 11–18 秒、区間は線形・全体の加減速は timeWarp）。第2段階の実測報告に記録された最終版の値。
-//   ※動画版(zip, Nov 15)の rig とは後半（t≥14.36）の注視点が異なる。経緯は報告を参照。
-export const LANDSCAPE_KEYS = [
-  { t: 11, pos: [-420, 40, 14], target: [-140, 54, -2], fov: 38 },
-  { t: 12.78, pos: [-313, 50, 32], target: [-100, 103, -20], fov: 34 },
-  { t: 14.36, pos: [-211, 62, 44], target: [29, 94, -137], fov: 35 },
-  { t: 15.99, pos: [-111, 77, 54], target: [-54, 95, -240], fov: 36 },
-  { t: 16.5, pos: [-74, 102, 52.9], target: [-125.1, 66.4, -242.7], fov: 41.1 },
-  { t: 17.0, pos: [-35, 123.4, 55], target: [-190.4, 102.7, -201.6], fov: 46.7 },
-  { t: 17.5, pos: [57.3, 122.4, 49.4], target: [-229.9, 95.1, -37.3], fov: 45.9 },
-  { t: 18, pos: [64.8, 122.3, 31.1], target: [-234.1, 74.2, 5.0], fov: 45.9 },
-].map((k) => ({ ...k, ease: (u) => u }));
-
-// ---- 横画面 p=0.40〜0.60 の補正。p に対するキー（オフセット）列を C1 の Hermite で補間する。
-//   両端(p=0.40, 0.60)でオフセット 0・傾き 0 → 区間外は基本経路と完全に一致。
-//   key: [p, dx,dy,dz (位置), tx,ty,tz (注視点)]
-export const LANDSCAPE_ADJ = { keys: [
-  [0.40, 0, 0, 0, 0, 0, 0],
-  [0.44, -13.9, 10.8, 28.9, -0.6, 74.1, 32.6],
-  [0.47, -17.1, 19.3, 53.7, 9.5, 60.2, 19.2],
-  [0.50, -6.9, 27.5, 66.3, 5.3, 46.3, 15.0],
-  [0.53, 7.6, 32.3, 56.1, -12.7, 48.9, 0.5],
-  [0.56, 0.2, 26.8, 28.8, -26.6, 66.5, 10.0],
-  [0.60, 0, 0, 0, 0, 0, 0],
-] };
-
+/** 補正キー列 → p での 6 成分オフセット（位置3＋注視点3）。窓の外は null。key: [p, dx,dy,dz, tx,ty,tz] */
 export function adjustAt(adj, p) {
   const K = adj.keys, n = K.length;
   if (p <= K[0][0] || p >= K[n - 1][0]) return null;
@@ -55,23 +26,12 @@ export function adjustAt(adj, p) {
   return out;
 }
 
-// ---- 縦画面：塔の軸を中心に周回。pos は軸からの水平距離 r と方位角で与える。
-//   key: [方位角deg(軸から見たカメラの方向, 0=+x, 90=+z), 水平距離r(m), 高さy(m), 注視点y(m), fov, 相対速度]
-export const PORTRAIT_SPEC = [
-  [180.0, 280.0, 46.0, 66.0, 50, 1.0],
-  [167.7, 235.0, 99.5, 80.0, 51, 1.0],
-  [141.2, 204.6, 117.9, 90.0, 52, 0.9],
-  [103.0, 170.6, 127.9, 95.6, 53, 0.75],
-  [83.4, 146.0, 127.9, 106.9, 54, 0.65],
-  [11.3, 132.3, 126.0, 106.9, 55, 0.6],
-  [3.5, 149.3, 124.1, 95.4, 56, 0.5],
-];
-
 const rad = (d) => (d * Math.PI) / 180;
-function portraitKeys(spec) {
+/** 縦画面の周回仕様 → キー。key: [方位角deg(軸から見たカメラの方向, 0=+x, 90=+z), 水平距離r(m), 高さy(m), 注視点y(m), fov, 相対速度] */
+export function portraitKeys(spec, axis) {
   return spec.map(([az, r, y, ty, fov, speed]) => ({
-    pos: [TOWER.x + r * Math.cos(rad(az)), y, TOWER.z + r * Math.sin(rad(az))],
-    target: [TOWER.x, ty, TOWER.z], fov, speed,
+    pos: [axis.x + r * Math.cos(rad(az)), y, axis.z + r * Math.sin(rad(az))],
+    target: [axis.x, ty, axis.z], fov, speed,
   }));
 }
 
@@ -89,7 +49,8 @@ function shake(t, amp, seed = 0) {
 
 /** 経路長ベースのカメラ経路。進行度 u(0..1) が経路上の位置に（速度の重み付きで）対応する。 */
 export class ArcRig {
-  constructor(keys, { shakeAmp = 0.1, shakeSeed = 4.0, timeWarp = warp, N = 160 } = {}) {
+  constructor(keys, { shakeAmp = 0.1, shakeSeed = 4.0, timeWarp = warp, N = 160, t0 = 0, dur = DURATION } = {}) {
+    this.t0 = t0; this.dur = dur;
     this.keys = keys; this.shakeAmp = shakeAmp; this.shakeSeed = shakeSeed; this.timeWarp = timeWarp;
     const n = keys.length, M = (n - 1) * N;
     this.cum = new Float64Array(M + 1);
@@ -121,27 +82,33 @@ export class ArcRig {
     if (this.shakeAmp > 0) { const sh = shake(tShake, this.shakeAmp, this.shakeSeed); r.position = r.position.map((v, i) => v + sh[i]); }
     return r;
   }
-  sample(tGlobal) { return this.sampleU((tGlobal - GLOBAL0) / DURATION, tGlobal); }
+  sample(tGlobal) { return this.sampleU((tGlobal - this.t0) / this.dur, tGlobal); }
 }
 
 // 混合中（0<w<1）は 2 本の経路を直線で結ぶため建物に近づきうる。その分だけ高さを持ち上げる（w=0.5 で最大）。
 export const BLEND_LIFT = 30;
 
+/**
+ * path: 都市の経路データ
+ *   { globalStart, duration, landscapeKeys, adj, portraitSpec, axis:{x,z}, blendLift? }
+ */
 export class ScrollRig {
-  constructor({ landscapeKeys = LANDSCAPE_KEYS, adj = LANDSCAPE_ADJ, portraitSpec = PORTRAIT_SPEC } = {}) {
+  constructor(path) {
+    const { globalStart, duration = DURATION, landscapeKeys, adj, portraitSpec, axis } = path;
+    this.t0 = globalStart; this.dur = duration;
     this.landscape = new CameraRig(landscapeKeys, { shakeAmp: 0.1, shakeSeed: 4.0, timeWarp: warp });
-    this.portrait = new ArcRig(portraitKeys(portraitSpec));
+    this.portrait = new ArcRig(portraitKeys(portraitSpec, axis), { t0: globalStart, dur: duration });
     this.adj = adj;
     this.weight = 0; // 縦画面経路の重み（0=横, 1=縦）
-    this.blendLift = BLEND_LIFT;
+    this.blendLift = path.blendLift ?? BLEND_LIFT;
   }
 
   /** 動画の経路時間（グローバル秒）→ 進行度 p（補正窓の判定用。保持区間は p>=SPAN） */
-  static pOf(tGlobal) { return clamp((tGlobal - GLOBAL0) / DURATION) * SPAN; }
+  pOf(tGlobal) { return clamp((tGlobal - this.t0) / this.dur) * SPAN; }
 
   landscapeAt(tGlobal) {
     const s = this.landscape.sample(tGlobal);
-    const o = adjustAt(this.adj, ScrollRig.pOf(tGlobal));
+    const o = adjustAt(this.adj, this.pOf(tGlobal));
     if (o) {
       s.position = s.position.map((v, i) => v + o[i]);
       s.target = s.target.map((v, i) => v + o[3 + i]);

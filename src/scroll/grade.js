@@ -19,15 +19,14 @@ export const GRADE_DEFAULT = {
 };
 
 /** URL（?grade= 倍率, ?gradeExpDay= ?gradeExpDusk= ?vig= …）から設定を作る。 */
-export function gradeFromQuery(q) {
+export function gradeFromQuery(q, base = GRADE_DEFAULT) {
   const raw = q.get('grade');
   const mult = raw === null || raw === '' ? 1 : Math.max(0, parseFloat(raw));
   const num = (k, d) => (q.has(k) && isFinite(parseFloat(q.get(k))) ? parseFloat(q.get(k)) : d);
   return {
     mult: isFinite(mult) ? mult : 1,
-    expDay: num('gradeExpDay', GRADE_DEFAULT.expDay), expDusk: num('gradeExpDusk', GRADE_DEFAULT.expDusk),
-    vig: q.has('vig') && isFinite(parseFloat(q.get('vig'))) ? parseFloat(q.get('vig')) : GRADE_DEFAULT.vig,
-    rampFrom: GRADE_DEFAULT.rampFrom, rampTo: GRADE_DEFAULT.rampTo,
+    ...base, expDay: num('gradeExpDay', base.expDay), expDusk: num('gradeExpDusk', base.expDusk),
+    vig: q.has('vig') && isFinite(parseFloat(q.get('vig'))) ? parseFloat(q.get('vig')) : base.vig,
   };
 }
 

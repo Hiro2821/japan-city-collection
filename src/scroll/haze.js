@@ -10,14 +10,14 @@ import * as THREE from 'three';
 export const HAZE_DEFAULT = { start: 700, end: 7000, strength: 0.6, desat: 0.55, mountain: 0.5 };
 
 /** URL の ?haze=（倍率。0 で無効）などから設定を作る。 */
-export function hazeFromQuery(q) {
+export function hazeFromQuery(q, base = HAZE_DEFAULT) {
   const raw = q.get('haze');
   const mult = raw === null || raw === '' ? 1 : Math.max(0, parseFloat(raw));
   const num = (k, d) => (q.has(k) && isFinite(parseFloat(q.get(k))) ? parseFloat(q.get(k)) : d);
   return {
     mult: isFinite(mult) ? mult : 1,
-    start: num('hazeStart', HAZE_DEFAULT.start), end: num('hazeEnd', HAZE_DEFAULT.end),
-    strength: num('hazeMax', HAZE_DEFAULT.strength), desat: num('hazeDesat', HAZE_DEFAULT.desat), mountain: num('hazeMtn', HAZE_DEFAULT.mountain),
+    start: num('hazeStart', base.start), end: num('hazeEnd', base.end),
+    strength: num('hazeMax', base.strength), desat: num('hazeDesat', base.desat), mountain: num('hazeMtn', base.mountain),
   };
 }
 
