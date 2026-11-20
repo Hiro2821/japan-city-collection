@@ -11,6 +11,10 @@ const mixN = (a, b, k) => a + (b - a) * k;
 export const GRADE_DEFAULT = {
   expDay: 1.15, expDusk: 0.90,                // 露出倍率（1.0 = 変更なし）
   rampFrom: 0.25, rampTo: 1.0,               // 夕景側へ移る区間（t/7）
+  // 夕景での色温度の寄せ（グレード段のみ。昼=look.grade の値のまま、夕景で下の値へ。空・霞・太陽の色はシーンのパレットが決める）
+  highDusk: [1.075, 1.0, 0.905],             // ハイライトの色（暖色）
+  shadowDusk: [0.035, 0.03, 0.10],           // 影の色（ティール→赤みを帯びた青紫。ピンクの空と同系にする）
+  satDusk: 1.075,                            // 彩度
 };
 
 /** URL（?grade= 倍率, ?gradeExpDay= ?gradeExpDusk= ?vig= …）から設定を作る。 */
@@ -43,6 +47,14 @@ export class ScrollGrade {
     if (!this.enabled) return;
     const u = this.dusk(t);
     this.now = { exposure: this.exposureGain(t), dusk: u };
+    const k = u * this.cfg.mult;
+    const lerpC = (col, to) => col.setRGB(mixN(col.r, to[0], k), mixN(col.g, to[1], k), mixN(col.b, to[2], k));
+    if (g.uHighTint) lerpC(g.uHighTint.value, this.cfg.highDusk);
+    if (g.uShadowTint) {   // look.grade に含まれないので、初回の値を基準に毎フレーム計算（蓄積しない）
+      this.baseShadow ??= g.uShadowTint.value.clone();
+      g.uShadowTint.value.copy(this.baseShadow); lerpC(g.uShadowTint.value, this.cfg.shadowDusk);
+    }
+    g.uSat.value = mixN(g.uSat.value, this.cfg.satDusk, k);
   }
 }
 
