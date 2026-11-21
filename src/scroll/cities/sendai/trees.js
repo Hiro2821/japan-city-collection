@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { NOISE } from '../../../lib/glsl.js';
-import { STREETS, PARKS } from './layout.js';
+import { STREETS, PARKS, RIVER_X } from './layout.js';
 
 const rectOf = (s) => (s.dir === 'x'
   ? { x0: s.a, x1: s.b, z0: s.c - s.w / 2, z1: s.c + s.w / 2 }
@@ -67,7 +67,7 @@ function zelkovaGeometries() {
 export function treePositions(rng) {
   const P = [];
   const strips = STREETS.map(rectOf);
-  const free = (x, z, self) => !STREETS.some((s, i) => s !== self && s.kind !== 3 && inRect(strips[i], x, z, s.kind === 0 ? 0.5 : -0.5)) && !PARKS.some((k) => inRect(k, x, z, 0));
+  const free = (x, z, self) => x > RIVER_X + 26 && !STREETS.some((s, i) => s !== self && s.kind !== 3 && inRect(strips[i], x, z, s.kind === 0 ? 0.5 : -0.5)) && !PARKS.some((k) => inRect(k, x, z, 0));
   const row = (s, off, step, ph, sc, until = s.b) => {
     for (let t = s.a + ph; t < until; t += step) {
       const x = s.dir === 'x' ? t : s.c + off, z = s.dir === 'x' ? s.c + off : t;

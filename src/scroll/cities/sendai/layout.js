@@ -6,7 +6,7 @@
 export const ICHI_X = 0;       // 一番町の軸
 export const JOZ_Z = 0;        // 定禅寺通の軸
 export const AOBA_Z = 230;     // 青葉通の軸（実際は定禅寺通の約 625 m 南 → 約 230 m に圧縮）
-export const RIVER_X = -300;   // 広瀬川（圧縮。西公園のすぐ西）
+export const RIVER_X = -340;   // 広瀬川（圧縮。西公園のすぐ西）
 export const STATION = { x: 230, z: 150 };   // 駅前デッキ付近（青葉通の東端、北側）
 
 // 道路の断面（軸からの距離 d。単位 m）。kind: 0=一般の街路 1=青葉通（ケヤキ 3 列） 2=定禅寺通（ケヤキ 4 列） 3=アーケード（歩行者専用）
@@ -19,7 +19,7 @@ export const SECTION = {
 
 // 道路帯。dir:'x'=東西に延びる(中心 z=c) / 'z'=南北に延びる(中心 x=c)。a..b は延びる範囲。w は全幅。
 export const STREETS = [
-  { id: 'aoba', dir: 'x', c: AOBA_Z, w: 50, a: -330, b: 330, kind: 1 },
+  { id: 'aoba', dir: 'x', c: AOBA_Z, w: 50, a: -372, b: 330, kind: 1 },
   { id: 'joz', dir: 'x', c: JOZ_Z, w: 46, a: -240, b: 110, kind: 2 },
   { id: 'ichi-n', dir: 'z', c: ICHI_X, w: 20, a: -130, b: 40, kind: 0 },
   { id: 'ichi-arcade', dir: 'z', c: ICHI_X, w: 14, a: 40, b: 200, kind: 3 },
@@ -37,7 +37,7 @@ export const STREETS = [
 
 // 公園・広場（矩形。x0,x1,z0,z1）
 export const PARKS = [
-  { id: 'nishi', x0: -340, x1: -240, z0: -55, z1: 55 },     // 西公園（定禅寺通の西端）
+  { id: 'nishi', x0: -318, x1: -240, z0: -55, z1: 55 },     // 西公園（定禅寺通の西端）
   { id: 'kotodai', x0: 110, x1: 170, z0: -45, z1: 45 },     // 勾当台公園（東端）
 ];
 export const PLAZAS = [
@@ -45,18 +45,29 @@ export const PLAZAS = [
 ];
 
 // 建物を置いてよい領域（街区）：x∈[-470,330]、z∈[-240,400]。西は広瀬川の手前まで。
-export const CITY_BOX = { x0: -335, x1: 340, z0: -240, z1: 400 };
+export const CITY_BOX = { x0: -318, x1: 340, z0: -240, z1: 400 };
 
 // ---- 地形（青葉山の丘は西、広瀬川の谷は x≈RIVER_X）。市街は y=0 の平地。
-export const BLUFF = { x0: RIVER_X - 20, top: 95, crestX: -460 };   // 丘の起点と高さ（実際の比高 約 100 m）
+export const BLUFF = { x0: RIVER_X - 22, top: 95, crestX: -500 };
+// 城址の平場（本丸跡の見晴らし台）：丘の上を円形に均す。伊達政宗騎馬像の足元もここ。
+export const PLATEAU = { x: -478, z: 244, r0: 34, r1: 92 };   // 丘の起点と高さ（実際の比高 約 100 m）
 const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-/** 地面の高さ y(m)。市街は 0、青葉山の丘は西（広瀬川の谷は Step 4 で追加）。丘は東西・南北とも端でゼロへ収束する。 */
-export function groundY(x, z) {
+/** 丘だけの高さ（平場の均しの前）。 */
+function bluffBase(x, z) {
   const rise = sm(BLUFF.x0, BLUFF.crestX, x) * (1 - sm(-1150, -1500, x));
   const dz = Math.abs(z - 250);
   const lateral = 1 - sm(260, 760, dz);
   return BLUFF.top * rise * (1 - sm(700, 1000, dz)) * (0.4 + 0.6 * lateral);
 }
+const PLATEAU_H = bluffBase(PLATEAU.x, PLATEAU.z);
+/** 地面の高さ y(m)。市街は 0、青葉山の丘は西、丘の上に円形の平場（城址）。 */
+export function groundY(x, z) {
+  const h = bluffBase(x, z);
+  const r = Math.hypot(x - PLATEAU.x, z - PLATEAU.z);
+  const w = 1 - sm(PLATEAU.r0, PLATEAU.r1, r);
+  return h + (PLATEAU_H - h) * w;
+}
+export const PLATEAU_Y = PLATEAU_H;
 
 // ---- 太陽方向（夏の夕方：西北西、低い）と影の中心
 export const SUN_DIR = [-0.86, 0.3, -0.3];
@@ -68,5 +79,5 @@ export const ROUTE = [
   [-170, 110], [-170, 0],                    // B 前半：縦画面は街路（西の連絡街路 x=-170）を北へ。横画面は上空を北西へ飛び越えて定禅寺通の西端へ
   [0, 0],                                    // B 後半：定禅寺通を東へ
   [0, 110], [0, 215],                        // C：一番町を南へ（アーケード）
-  [-90, 236], [-200, 238], [-310, 236], [-430, 230],   // D：青葉通を西へ→広瀬川→青葉山（丘の上の城址の見晴らし）
+  [-90, 236], [-200, 238], [-330, 238], [-505, 238],   // D：青葉通を西へ→広瀬川の橋→青葉山（丘の上の城址の見晴らし）
 ];

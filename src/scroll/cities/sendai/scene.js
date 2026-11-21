@@ -15,8 +15,9 @@ import { PATH } from './camera.js';
 import { buildTrees } from './trees.js';
 import { buildArcadeFrame, buildShopfronts, arcadeLights, tanabataItems, buildPoles as buildBamboo, ARCADE } from './arcade.js';
 import { buildStreamers } from './tanabata.js';
+import { buildRiver, buildBridge, buildForest, buildStatue, buildPlateau, farCityLights } from './castle.js';
 import { lampList, signalList, buildPoles, buildDeck } from './street.js';
-import { STREETS, PARKS, PLAZAS, CITY_BOX, BLUFF, AOBA_Z, JOZ_Z, groundY, SUN_DIR as SUN } from './layout.js';
+import { STREETS, PARKS, PLAZAS, CITY_BOX, BLUFF, AOBA_Z, JOZ_Z, RIVER_X, groundY, SUN_DIR as SUN } from './layout.js';
 
 const AMBIENT_NORMAL = 1200;   // index.js の ambient.counts.normal と同じ値（これを 1.0 として、軽量時は割合で間引く）
 const SUN_DIR = new THREE.Vector3(...SUN).normalize();
@@ -89,6 +90,7 @@ export class SendaiScrollScene extends CityScene {
     this._buildStation();
     this._buildTreesAll(rng);
     this._buildArcade(rng);
+    this._buildCastleSection(rng);
     this._buildTraffic(rng);
 
     // ---- カメラ（通り沿い経路：横は時間キー、縦は折れ線ドリー）
@@ -123,7 +125,7 @@ export class SendaiScrollScene extends CityScene {
   _buildGround() {
     const geo = new THREE.PlaneGeometry(24000, 24000, 1, 1); geo.rotateX(-Math.PI / 2);
     const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0 });
-    mat.customProgramCacheKey = () => 'sendai-ground-v3';
+    mat.customProgramCacheKey = () => 'sendai-ground-v4';
     // 小さい順（一般街路）→ アーケード → 青葉通・定禅寺通 の順に描いて、主要な通りが交差点で連続するようにする
     const order = (s) => (s.kind === 0 ? 0 : s.kind === 3 ? 1 : 2);
     const st = [...STREETS].sort((a, b) => order(a) - order(b));
@@ -181,6 +183,7 @@ export class SendaiScrollScene extends CityScene {
                 }
               }
             }
+            if (surf < -0.5) { float bank = 1.0 - smoothstep(20.0, 30.0, abs(p.x - (${RIVER_X.toFixed(1)}))); c = mix(c, grass * 1.1, bank); }   // 川岸は草地
             if (surf > -0.5) {
               vec3 roadC = mix(vec3(0.075, 0.078, 0.085), vec3(0.17, 0.17, 0.18), smoothstep(0.55, 0.95, nz) * 0.5);
               vec3 walkC = vec3(0.50, 0.49, 0.47) * (0.88 + 0.24 * fine);
@@ -226,7 +229,7 @@ export class SendaiScrollScene extends CityScene {
 
   // ---------- 青葉山の丘（西）。Step 4 で石垣・木立・城址を足す。
   _buildBluff() {
-    const x0 = -1500, x1 = BLUFF.x0, z0 = -750, z1 = 1250, nx = 110, nz = 150;
+    const x0 = -1500, x1 = BLUFF.x0, z0 = -750, z1 = 1250, nx = 150, nz = 170;
     const geo = new THREE.PlaneGeometry(x1 - x0, z1 - z0, nx, nz); geo.rotateX(-Math.PI / 2);
     geo.translate((x0 + x1) / 2, 0, (z0 + z1) / 2);
     const pos = geo.attributes.position;
@@ -236,12 +239,12 @@ export class SendaiScrollScene extends CityScene {
     for (let i = 0; i < pos.count; i++) {
       const h = pos.getY(i), slope = 1 - nrm.getY(i), n = noise.fbm(pos.getX(i) * 0.01, pos.getZ(i) * 0.01, 3);
       const forest = Math.min(1, h / 20), g = 0.85 + 0.3 * n;
-      col[i * 3] = (0.17 + (0.09 - 0.17) * forest + slope * 0.25) * g;
-      col[i * 3 + 1] = (0.25 + (0.17 - 0.25) * forest + slope * 0.15) * g;
-      col[i * 3 + 2] = (0.10 + (0.07 - 0.10) * forest + slope * 0.1) * g;
+      col[i * 3] = (0.22 + (0.13 - 0.22) * forest + slope * 0.25) * g;
+      col[i * 3 + 1] = (0.32 + (0.23 - 0.32) * forest + slope * 0.15) * g;
+      col[i * 3 + 2] = (0.13 + (0.09 - 0.13) * forest + slope * 0.1) * g;
     }
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, emissive: new THREE.Color(0.035, 0.06, 0.04), polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
     mat.customProgramCacheKey = () => 'sendai-bluff-v1';
     const mesh = new THREE.Mesh(geo, mat); mesh.receiveShadow = true; mesh.castShadow = false; mesh.name = 'bluff';
     mesh.position.y = 0.02;
@@ -302,7 +305,7 @@ export class SendaiScrollScene extends CityScene {
         const lot = { x0: lx0, x1: lx1, z0: lz0, z1: lz1 };
         if (strips.some((s) => hit(lot, s, -0.6)) || keep.some((k) => hit(lot, k, 2))) continue;
         const cx = (lx0 + lx1) / 2, cz = (lz0 + lz1) / 2;
-        if (cx < BLUFF.x0 - 20) continue;
+        if (cx < RIVER_X + 26) continue;
         const dAoba = Math.abs(cz - AOBA_Z), dJoz = Math.abs(cz - JOZ_Z), dIchi = Math.abs(cx);
         let hMin = 16, hMax = 44;                                              // 一般の街区
         if (dAoba < 62) { hMin = 38; hMax = 95; }                              // 青葉通沿い：事務所・商業ビル
@@ -374,6 +377,25 @@ export class SendaiScrollScene extends CityScene {
     this.decoCount = T.items.length; this.archCount = fr.archCount;
   }
 
+  // ---------- D 区間：広瀬川・橋・青葉山の森・城址（平場・石垣・政宗像のシルエット）・遠方の街の灯り
+  _buildCastleSection(rng) {
+    this.scene.add(buildRiver());
+    const br = buildBridge(); this.scene.add(br.mesh);
+    const pl = buildPlateau(); this.scene.add(pl.mesh);
+    this.scene.add(buildStatue());
+    const fo = buildForest(rng); this.scene.add(fo.mesh); this.forestCount = fo.count;
+    const mk = (pts, size, color) => {
+      const pos = new Float32Array(pts.length * 3), col = new Float32Array(pts.length * 3), siz = new Float32Array(pts.length);
+      pts.forEach((q, i) => { pos.set(q, i * 3); col.set(color, i * 3); siz[i] = size; });
+      return createGlowPoints(THREE, { positions: pos, colors: col, sizes: siz, fogDensity: 0.00005, minPx: 1.4, maxPx: 16 });
+    };
+    this.castleGlow = mk([...pl.lights, ...br.lights], 0.8, [2.8, 1.8, 0.9]); this.scene.add(this.castleGlow.points);
+    const fl = farCityLights(rng);
+    this.farGlow = createGlowPoints(THREE, { positions: fl.positions, colors: fl.colors, sizes: fl.sizes, fogDensity: 0.00003, minPx: 1.2, maxPx: 6 });
+    this.scene.add(this.farGlow.points);
+    this.farLightCount = fl.count;
+  }
+
   // ---------- 車と歩行者（札幌の部品を流用。歩行者が主で、車は控えめ。密度は札幌並み＝U-8）
   _buildTraffic(rng) {
     const lanes = [];
@@ -442,11 +464,13 @@ export class SendaiScrollScene extends CityScene {
     this.sky.mesh.position.copy(camera.position);
     this.sky.uniforms.uTime.value = tg * 5;
     const fog = this.scene.fog.density;
-    for (const g of [this.lamps, this.carGlow, this.signals, this.deckGlow]) { g.uniforms.uProj.value = projScale; g.uniforms.uFog.value = fog; }
+    for (const g of [this.lamps, this.carGlow, this.signals, this.deckGlow, this.castleGlow, this.farGlow]) { g.uniforms.uProj.value = projScale; g.uniforms.uFog.value = fog; }
     const n = this.nightU.value;
     this.lamps.uniforms.uGain.value = 0.08 + 1.0 * n;
     this.carGlow.uniforms.uGain.value = 0.5 + 0.7 * n;
     this.signals.uniforms.uGain.value = 0.6 + 0.6 * n;
+    this.castleGlow.uniforms.uGain.value = 0.1 + 1.0 * n;
+    this.farGlow.uniforms.uGain.value = 0.04 + 1.3 * n * n;
     this.deckGlow.uniforms.uGain.value = 0.1 + 1.0 * n;
     this.deck.mat.emissiveIntensity = 0.02 + 0.2 * n;
     this.cars.update(tg, this.carGlow.points.geometry.attributes.position.array);
