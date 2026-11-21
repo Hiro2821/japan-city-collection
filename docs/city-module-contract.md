@@ -43,3 +43,9 @@ src/scroll/
       captions.js            キャプション（純粋なデータ）
       camera.js              経路データ（旧 rig.js の LANDSCAPE_KEYS / LANDSCAPE_ADJ / PORTRAIT_SPEC / TOWER）
 ```
+
+## コレクション UI（共通側）
+- `scroll.html`（`?city=` なし）はスタート画面（都市カード）。`?city=<id>` の直リンクは選択画面なしで開始。
+- 体験中は右上のメニューで都市を切り替える（現シーンを `disposeScene` → `scrollTo(0)` → p=0 で新都市を開始、URL は `replaceState` で `city=` のみ更新し他のパラメータは保持）。
+- p≈0.96〜1.0 で「Next — <次の都市>」を表示。最後の都市は「JAPAN — THE CITY COLLECTION」の締めで、タップでスタート画面へ。
+- UI は `src/scroll/ui.js`（純 DOM、class `ui`）。新しい都市は `cities/index.js` の `LOADERS` と `ui.js` の `CARD_INFO`（季節・テーマ表示）に足す。
