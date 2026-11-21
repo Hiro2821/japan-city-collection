@@ -12,6 +12,8 @@ import { NOISE } from '../../../lib/glsl.js';
 import { PathRig } from '../../rig.js';
 import { applyScrollEffects } from '../../city-api.js';
 import { PATH } from './camera.js';
+import { buildTrees } from './trees.js';
+import { lampList, signalList, buildPoles, buildDeck } from './street.js';
 import { STREETS, PARKS, PLAZAS, CITY_BOX, BLUFF, AOBA_Z, JOZ_Z, groundY, SUN_DIR as SUN } from './layout.js';
 
 const SUN_DIR = new THREE.Vector3(...SUN).normalize();
@@ -78,6 +80,8 @@ export class SendaiScrollScene extends CityScene {
     // ---- 市街（仮の建物）・街灯・動くもの
     this._buildBlocks(rng);
     this._buildLamps();
+    this._buildStation();
+    this._buildTreesAll(rng);
     this._buildTraffic(rng);
 
     // ---- カメラ（通り沿い経路：横は時間キー、縦は折れ線ドリー）
@@ -112,7 +116,7 @@ export class SendaiScrollScene extends CityScene {
   _buildGround() {
     const geo = new THREE.PlaneGeometry(24000, 24000, 1, 1); geo.rotateX(-Math.PI / 2);
     const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0 });
-    mat.customProgramCacheKey = () => 'sendai-ground-v1';
+    mat.customProgramCacheKey = () => 'sendai-ground-v2';
     // 小さい順（一般街路）→ アーケード → 青葉通・定禅寺通 の順に描いて、主要な通りが交差点で連続するようにする
     const order = (s) => (s.kind === 0 ? 0 : s.kind === 3 ? 1 : 2);
     const st = [...STREETS].sort((a, b) => order(a) - order(b));
@@ -145,7 +149,7 @@ export class SendaiScrollScene extends CityScene {
             float inCity = step(${box.x0.toFixed(1)}, p.x) * step(p.x, ${box.x1.toFixed(1)}) * step(${box.z0.toFixed(1)}, p.y) * step(p.y, ${box.z1.toFixed(1)});
             vec3 grass = vec3(0.17, 0.25, 0.10) * (0.85 + 0.3 * nz + 0.08 * fine);
             vec3 c = mix(grass, vec3(0.30, 0.30, 0.29) * (0.9 + 0.2 * fine), inCity);
-            float surf = -1.0, lat = 99.0, alongRoad = 0.0, kindHit = 0.0;
+            float surf = -1.0, lat = 99.0, alongRoad = 0.0, kindHit = 0.0, cHit = 0.0;
             for (int i = 0; i < ${NST}; i++) {
               vec4 A = uStA[i], B = uStB[i];
               float along = A.x < 0.5 ? p.x : p.y;
@@ -157,7 +161,17 @@ export class SendaiScrollScene extends CityScene {
                 else if (kind < 1.5) s = off < 4.0 ? 2.0 : (off < 16.5 ? 1.0 : 0.0);
                 else if (kind < 2.5) s = off < 9.0 ? ((off > 2.6 && off < 6.4) ? 2.0 : 3.0) : (off < 17.0 ? 1.0 : 0.0);
                 else s = 3.0;
-                surf = s; lat = off; alongRoad = along; kindHit = kind;
+                surf = s; lat = off; alongRoad = along; kindHit = kind; cHit = A.y;
+              }
+            }
+            float zebra = 0.0;
+            if (surf > 0.5 && surf < 1.5 && kindHit > 0.5) {                 // 青葉通・定禅寺通の車道：一般街路との交差の手前に横断歩道
+              for (int k = 0; k < ${NST}; k++) {
+                vec4 A2 = uStA[k], B2 = uStB[k];
+                if (A2.x > 0.5 && A2.w < 0.5 && B2.x < cHit && B2.y > cHit) {
+                  float dx = abs(p.x - A2.y), e = A2.z * 0.5;
+                  if (dx > e + 1.0 && dx < e + 4.6) zebra = max(zebra, step(0.5, fract(p.y / 1.1)));
+                }
               }
             }
             if (surf > -0.5) {
@@ -168,7 +182,7 @@ export class SendaiScrollScene extends CityScene {
               float lineAt = kindHit < 0.5 ? 0.0 : (kindHit < 1.5 ? 10.25 : 13.0);
               float dash = step(0.5, fract(alongRoad / 8.0)) * (1.0 - smoothstep(0.1, 0.3, abs(lat - lineAt)));
               if (surf < 0.5) c = walkC;
-              else if (surf < 1.5) { c = mix(roadC, vec3(0.72), dash * 0.65 * smoothstep(0.3, 0.7, fine)); gRough = 0.5; }
+              else if (surf < 1.5) { c = mix(roadC, vec3(0.72), dash * 0.65 * smoothstep(0.3, 0.7, fine)); c = mix(c, vec3(0.78), zebra * 0.8); gRough = 0.5; }
               else if (surf < 2.5) c = greenC;
               else { c = tileC; if (kindHit > 2.5) { float g = step(0.04, abs(fract(p.x / 1.2) - 0.5)) * step(0.04, abs(fract(p.y / 1.2) - 0.5)); c *= 0.9 + 0.1 * g; } }
             }
@@ -295,29 +309,47 @@ export class SendaiScrollScene extends CityScene {
         batch.add(cx, 0, cz, w, h, d, kind, seed++ + rng(), 0.35 + 0.55 * rng());
       }
     }
+    // 駅前の大型建物（実在の名称・ロゴは使わない＝U-3）：駅舎と、その両脇の中高層
+    batch.add(326, 0, 160, 44, 36, 112, 2, 901.3, 0.7);
+    batch.add(300, 0, 96, 30, 70, 30, 0, 902.1, 0.6);
+    batch.add(300, 0, 226, 34, 58, 28, 2, 903.7, 0.6);
+    batch.add(350, 0, 160, 18, 84, 40, 2, 904.4, 0.7);
     this.boxes = batch;
     this.boxMesh = batch.build({ castShadow: true });
     this.scene.add(this.boxMesh);
   }
 
-  // ---------- 街灯（光点）：通りの両縁に 36 m 間隔
+  // ---------- 街灯（柱＋光点）と信号。灯りは夜ほど強い。
   _buildLamps() {
-    const P = [];
-    for (const s of STREETS) {
-      if (s.kind === 3) continue;
-      const half = s.w / 2 - 1.2;
-      const n = Math.floor((s.b - s.a) / 36);
-      for (let i = 0; i <= n; i++) for (const side of [-1, 1]) {
-        const t = s.a + i * 36 + (side > 0 ? 18 : 0);
-        if (t > s.b) continue;
-        P.push(s.dir === 'x' ? [t, 9, s.c + side * half] : [s.c + side * half, 9, t]);
-      }
-    }
-    const pos = new Float32Array(P.length * 3), col = new Float32Array(P.length * 3), siz = new Float32Array(P.length);
-    P.forEach((q, i) => { pos.set(q, i * 3); col.set([3.0, 1.9, 0.9], i * 3); siz[i] = 1.1; });
+    const L = lampList(), S = signalList();
+    const [lampM, sigM] = buildPoles(L, S);
+    this.scene.add(lampM, sigM);
+    const pos = new Float32Array(L.length * 3), col = new Float32Array(L.length * 3), siz = new Float32Array(L.length);
+    L.forEach((q, i) => { pos.set(q.top, i * 3); col.set([3.0, 1.9, 0.9], i * 3); siz[i] = 1.1; });
     this.lamps = createGlowPoints(THREE, { positions: pos, colors: col, sizes: siz, fogDensity: 0.00005, minPx: 1.4, maxPx: 22 });
     this.scene.add(this.lamps.points);
-    this.lampCount = P.length;
+    const sp = new Float32Array(S.length * 3), sc = new Float32Array(S.length * 3), ss = new Float32Array(S.length);
+    S.forEach((q, i) => { sp.set([q.x, 6.2, q.z], i * 3); sc.set(q.green ? [0.3, 2.4, 0.9] : [2.6, 0.2, 0.12], i * 3); ss[i] = 0.5; });
+    this.signals = createGlowPoints(THREE, { positions: sp, colors: sc, sizes: ss, fogDensity: 0.00005, minPx: 1.4, maxPx: 10 });
+    this.scene.add(this.signals.points);
+    this.lampCount = L.length; this.signalCount = S.length;
+  }
+
+  // ---------- 駅前のペデストリアンデッキ（手すりの灯りは夕方から点く）
+  _buildStation() {
+    const d = buildDeck();
+    this.deck = d; this.scene.add(d.mesh);
+    const pos = new Float32Array(d.lights.length * 3), col = new Float32Array(d.lights.length * 3), siz = new Float32Array(d.lights.length);
+    d.lights.forEach((q, i) => { pos.set(q, i * 3); col.set([2.4, 1.6, 0.8], i * 3); siz[i] = 0.6; });
+    this.deckGlow = createGlowPoints(THREE, { positions: pos, colors: col, sizes: siz, fogDensity: 0.00005, minPx: 1.4, maxPx: 12 });
+    this.scene.add(this.deckGlow.points);
+  }
+
+  // ---------- ケヤキ並木・街路樹・公園の木
+  _buildTreesAll(rng) {
+    const T = buildTrees(rng);
+    T.meshes.forEach((m) => this.scene.add(m));
+    this.treeCount = T.count; this.treeTris = T.tris;
   }
 
   // ---------- 車と歩行者（札幌の部品を流用。歩行者が主で、車は控えめ。密度は札幌並み＝U-8）
@@ -381,10 +413,13 @@ export class SendaiScrollScene extends CityScene {
     this.sky.mesh.position.copy(camera.position);
     this.sky.uniforms.uTime.value = tg * 5;
     const fog = this.scene.fog.density;
-    for (const g of [this.lamps, this.carGlow]) { g.uniforms.uProj.value = projScale; g.uniforms.uFog.value = fog; }
+    for (const g of [this.lamps, this.carGlow, this.signals, this.deckGlow]) { g.uniforms.uProj.value = projScale; g.uniforms.uFog.value = fog; }
     const n = this.nightU.value;
     this.lamps.uniforms.uGain.value = 0.08 + 1.0 * n;
     this.carGlow.uniforms.uGain.value = 0.5 + 0.7 * n;
+    this.signals.uniforms.uGain.value = 0.6 + 0.6 * n;
+    this.deckGlow.uniforms.uGain.value = 0.1 + 1.0 * n;
+    this.deck.mat.emissiveIntensity = 0.02 + 0.2 * n;
     this.cars.update(tg, this.carGlow.points.geometry.attributes.position.array);
     this.carGlow.points.geometry.attributes.position.needsUpdate = true;
     this.peds.update(tg);
