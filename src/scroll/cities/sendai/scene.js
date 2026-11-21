@@ -13,9 +13,12 @@ import { PathRig } from '../../rig.js';
 import { applyScrollEffects } from '../../city-api.js';
 import { PATH } from './camera.js';
 import { buildTrees } from './trees.js';
+import { buildArcadeFrame, buildShopfronts, arcadeLights, tanabataItems, buildPoles as buildBamboo, ARCADE } from './arcade.js';
+import { buildStreamers } from './tanabata.js';
 import { lampList, signalList, buildPoles, buildDeck } from './street.js';
 import { STREETS, PARKS, PLAZAS, CITY_BOX, BLUFF, AOBA_Z, JOZ_Z, groundY, SUN_DIR as SUN } from './layout.js';
 
+const AMBIENT_NORMAL = 1200;   // index.js の ambient.counts.normal と同じ値（これを 1.0 として、軽量時は割合で間引く）
 const SUN_DIR = new THREE.Vector3(...SUN).normalize();
 
 // 時間帯パレット（A=夏の金色の夕方 B=夕焼け〜ブルーアワー C=灯りの夜）。快晴（U-13）。橙〜青の対比で、紫に寄せない。
@@ -41,6 +44,9 @@ export class SendaiScrollScene extends CityScene {
     this.nightU = { value: 0.1 };
     this.snowU = { value: 0 };           // 夏：facade の積雪は常に 0
     this.ambientCount = 0;
+    this.streamU = { uTime: { value: 0 }, uGlow: { value: 0.05 } };
+    this.shopU = { uShopGlow: { value: 0.05 } };
+    this.lodDist = 150;
   }
 
   async build() {
@@ -82,6 +88,7 @@ export class SendaiScrollScene extends CityScene {
     this._buildLamps();
     this._buildStation();
     this._buildTreesAll(rng);
+    this._buildArcade(rng);
     this._buildTraffic(rng);
 
     // ---- カメラ（通り沿い経路：横は時間キー、縦は折れ線ドリー）
@@ -107,7 +114,7 @@ export class SendaiScrollScene extends CityScene {
     // ---- 共通の描画負荷対策（タイル分割＋視錐台カリング）と霞。動くもの・描画順を保つ建物の箱は分割しない。
     applyScrollEffects(this, {
       tiled: this.fx.tiled, haze: this.fx.haze,
-      tileExclude: [this.cars.mesh, this.peds.mesh, this.boxMesh],
+      tileExclude: [this.cars.mesh, this.peds.mesh, this.pedsArcade.mesh, this.boxMesh],
       skyUniforms: this.sky.uniforms,
     });
   }
@@ -116,7 +123,7 @@ export class SendaiScrollScene extends CityScene {
   _buildGround() {
     const geo = new THREE.PlaneGeometry(24000, 24000, 1, 1); geo.rotateX(-Math.PI / 2);
     const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0 });
-    mat.customProgramCacheKey = () => 'sendai-ground-v2';
+    mat.customProgramCacheKey = () => 'sendai-ground-v3';
     // 小さい順（一般街路）→ アーケード → 青葉通・定禅寺通 の順に描いて、主要な通りが交差点で連続するようにする
     const order = (s) => (s.kind === 0 ? 0 : s.kind === 3 ? 1 : 2);
     const st = [...STREETS].sort((a, b) => order(a) - order(b));
@@ -199,6 +206,7 @@ export class SendaiScrollScene extends CityScene {
             float pool = pow(0.5 + 0.5 * cos(6.2831853 * alongRoad / 36.0), 3.0);
             float nearRoad = surf > -0.5 ? (1.0 - smoothstep(18.0, 28.0, lat)) : 0.0;
             gEmis = uNight * vec3(1.0, 0.62, 0.32) * nearRoad * (0.02 + (surf < 1.5 && surf > 0.5 ? 0.05 : 0.025) * pool);
+            if (kindHit > 2.5) gEmis += uNight * vec3(1.0, 0.62, 0.32) * 0.05;     // アーケードの床：店明かり・提灯の照り返し
             gBump = surf > 0.5 && surf < 1.5 ? 0.2 : 1.0;
           }`)
         .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = gRough;')
@@ -352,6 +360,20 @@ export class SendaiScrollScene extends CityScene {
     this.treeCount = T.count; this.treeTris = T.tris;
   }
 
+  // ---------- 一番町アーケードと七夕飾り（吹き流し・くす玉）
+  _buildArcade(rng) {
+    const fr = buildArcadeFrame(); fr.meshes.forEach((m) => this.scene.add(m));
+    const sh = buildShopfronts(rng, this.shopU); sh.meshes.forEach((m) => this.scene.add(m));
+    const al = arcadeLights();
+    this.arcadeGlow = createGlowPoints(THREE, { ...al, fogDensity: 0.00005, minPx: 1.4, maxPx: 16 });
+    this.scene.add(this.arcadeGlow.points);
+    const T = tanabataItems(rng);
+    const [poles, kusu] = buildBamboo(T.poles, T.balls); this.scene.add(poles, kusu);
+    this.streamers = buildStreamers(T.items, rng, this.streamU);
+    this.scene.add(this.streamers.group);
+    this.decoCount = T.items.length; this.archCount = fr.archCount;
+  }
+
   // ---------- 車と歩行者（札幌の部品を流用。歩行者が主で、車は控えめ。密度は札幌並み＝U-8）
   _buildTraffic(rng) {
     const lanes = [];
@@ -389,6 +411,13 @@ export class SendaiScrollScene extends CityScene {
     this.peds = createPedestrians(THREE, walkers);
     this.scene.add(this.peds.mesh);
     this.pedCount = walkers.length;
+    // アーケード内の人出（南北に歩く）：東西用の部品を 90° 回して使う。局所 x = -世界 z、局所 z = 世界 x
+    const aw = [];
+    for (let i = 0; i < 90; i++) aw.push({ x0: -(ARCADE.z1 - 2), x1: -(ARCADE.z0 + 2), z: rng.range(-5.2, 5.2), dir: rng() < 0.5 ? 1 : -1, speed: rng.range(0.7, 1.3), off: rng.range(0, 800), ph: rng() });
+    this.pedsArcade = createPedestrians(THREE, aw);
+    this.pedsArcade.mesh.rotation.y = Math.PI / 2; this.pedsArcade.mesh.updateMatrix();
+    this.scene.add(this.pedsArcade.mesh);
+    this.pedCount += aw.length;
   }
 
   // ---------- 時刻（グローバル）に応じた空・光・夜の度合い
@@ -422,11 +451,15 @@ export class SendaiScrollScene extends CityScene {
     this.deck.mat.emissiveIntensity = 0.02 + 0.2 * n;
     this.cars.update(tg, this.carGlow.points.geometry.attributes.position.array);
     this.carGlow.points.geometry.attributes.position.needsUpdate = true;
-    this.peds.update(tg);
+    this.peds.update(tg); this.pedsArcade.update(tg);
+    this.streamU.uTime.value = tg; this.streamU.uGlow.value = 0.04 + 0.5 * n;
+    this.shopU.uShopGlow.value = 0.08 + 0.9 * n;
+    this.arcadeGlow.uniforms.uProj.value = projScale; this.arcadeGlow.uniforms.uFog.value = fog; this.arcadeGlow.uniforms.uGain.value = 0.15 + 1.0 * n;
+    this.lodStats = this.streamers.updateLod(camera.position, this.lodDist);
   }
 
-  /** 環境アニメーション（吹き流し）の束数。Step 3 で描画数に反映する。 */
-  setAmbientCount(n) { this.ambientCount = n; }
+  /** 環境アニメーション（吹き流し）：n/1200 の割合で束を間引き、LOD 距離も縮める（スマホ軽量）。 */
+  setAmbientCount(n) { this.ambientCount = n; this.streamers.setFraction(Math.min(1, n / AMBIENT_NORMAL)); this.lodDist = n >= AMBIENT_NORMAL ? 150 : 100; }
 
   /** 縦画面経路の重み（0=横, 1=縦）。 */
   setLayoutWeight(w) { this.rig.weight = w; }

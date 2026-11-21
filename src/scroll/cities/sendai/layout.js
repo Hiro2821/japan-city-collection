@@ -6,7 +6,7 @@
 export const ICHI_X = 0;       // 一番町の軸
 export const JOZ_Z = 0;        // 定禅寺通の軸
 export const AOBA_Z = 230;     // 青葉通の軸（実際は定禅寺通の約 625 m 南 → 約 230 m に圧縮）
-export const RIVER_X = -430;   // 広瀬川（圧縮）
+export const RIVER_X = -300;   // 広瀬川（圧縮。西公園のすぐ西）
 export const STATION = { x: 230, z: 150 };   // 駅前デッキ付近（青葉通の東端、北側）
 
 // 道路の断面（軸からの距離 d。単位 m）。kind: 0=一般の街路 1=青葉通（ケヤキ 3 列） 2=定禅寺通（ケヤキ 4 列） 3=アーケード（歩行者専用）
@@ -19,7 +19,7 @@ export const SECTION = {
 
 // 道路帯。dir:'x'=東西に延びる(中心 z=c) / 'z'=南北に延びる(中心 x=c)。a..b は延びる範囲。w は全幅。
 export const STREETS = [
-  { id: 'aoba', dir: 'x', c: AOBA_Z, w: 50, a: -470, b: 330, kind: 1 },
+  { id: 'aoba', dir: 'x', c: AOBA_Z, w: 50, a: -330, b: 330, kind: 1 },
   { id: 'joz', dir: 'x', c: JOZ_Z, w: 46, a: -240, b: 110, kind: 2 },
   { id: 'ichi-n', dir: 'z', c: ICHI_X, w: 20, a: -130, b: 40, kind: 0 },
   { id: 'ichi-arcade', dir: 'z', c: ICHI_X, w: 14, a: 40, b: 200, kind: 3 },
@@ -45,10 +45,10 @@ export const PLAZAS = [
 ];
 
 // 建物を置いてよい領域（街区）：x∈[-470,330]、z∈[-240,400]。西は広瀬川の手前まで。
-export const CITY_BOX = { x0: -420, x1: 340, z0: -240, z1: 400 };
+export const CITY_BOX = { x0: -335, x1: 340, z0: -240, z1: 400 };
 
 // ---- 地形（青葉山の丘は西、広瀬川の谷は x≈RIVER_X）。市街は y=0 の平地。
-export const BLUFF = { x0: RIVER_X - 20, top: 95, crestX: -620 };   // 丘の起点と高さ（実際の比高 約 100 m）
+export const BLUFF = { x0: RIVER_X - 20, top: 95, crestX: -460 };   // 丘の起点と高さ（実際の比高 約 100 m）
 const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 /** 地面の高さ y(m)。市街は 0、青葉山の丘は西（広瀬川の谷は Step 4 で追加）。丘は東西・南北とも端でゼロへ収束する。 */
 export function groundY(x, z) {
@@ -68,5 +68,5 @@ export const ROUTE = [
   [-170, 110], [-170, 0],                    // B 前半：縦画面は街路（西の連絡街路 x=-170）を北へ。横画面は上空を北西へ飛び越えて定禅寺通の西端へ
   [0, 0],                                    // B 後半：定禅寺通を東へ
   [0, 110], [0, 215],                        // C：一番町を南へ（アーケード）
-  [-90, 236], [-300, 238], [-430, 236], [-560, 232], [-640, 226],   // D：青葉通を西へ→広瀬川→青葉山
+  [-90, 236], [-200, 238], [-310, 236], [-430, 230],   // D：青葉通を西へ→広瀬川→青葉山（丘の上の城址の見晴らし）
 ];
