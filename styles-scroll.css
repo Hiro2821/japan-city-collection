@@ -17,3 +17,54 @@ html, body { margin: 0; background: var(--bg); color: var(--text); font-family: 
 .cap h2 { margin: 0; font-weight: 300; font-size: clamp(24px, 7.2vw, 46px); letter-spacing: .16em; line-height: 1.2; }
 .cap p { margin: 6px 0 0; font-size: clamp(12px, 3.4vw, 16px); letter-spacing: .24em; color: #dfe6f4; opacity: .9; }
 @media (min-aspect-ratio: 1/1) { .cap h2 { font-size: clamp(24px, 4.2vw, 48px); } .cap p { font-size: clamp(12px, 1.6vw, 16px); } }
+
+/* ---------- コレクション UI（スタート画面・メニュー・フィナーレ案内）。シーン描画には影響しない ---------- */
+body.selecting { overflow: hidden; }
+body.selecting #track { display: none; }
+.ui[hidden] { display: none !important; }
+.select { position: fixed; inset: 0; z-index: 20; display: grid; grid-template-rows: auto 1fr auto; padding: max(28px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
+  background: radial-gradient(120% 80% at 50% 0%, #121a2c 0%, #07090f 62%); overflow: auto; }
+.sel-head { text-align: center; padding: 3svh 0 2svh; }
+.sel-head h1 { margin: 0; font-weight: 300; font-size: clamp(22px, 5.6vw, 44px); letter-spacing: .2em; line-height: 1.25; }
+.sel-tag { margin: 12px 0 0; font-size: clamp(11px, 2.6vw, 14px); letter-spacing: .3em; color: #aab4ca; }
+.sel-cards { display: grid; grid-template-columns: 1fr; gap: 14px; align-content: center; max-width: 980px; width: 100%; margin: 0 auto; padding: 1svh 0; }
+@media (min-aspect-ratio: 1/1) { .sel-cards { grid-template-columns: 1fr 1fr; gap: 20px; } }
+.sel-card { position: relative; display: grid; align-content: end; gap: 2px; text-align: left; min-height: clamp(130px, 28svh, 300px); padding: 18px 20px; border: 1px solid rgba(255, 255, 255, .14); border-radius: 4px; color: var(--text); font: inherit; cursor: pointer; overflow: hidden; isolation: isolate;
+  transition: border-color .3s, transform .3s; -webkit-tap-highlight-color: transparent; }
+.sel-card::before { content: ""; position: absolute; inset: 0; z-index: -1; transition: transform 1.2s ease, filter .3s; }
+.sel-card:hover, .sel-card:focus-visible { border-color: rgba(255, 255, 255, .55); outline: none; }
+.sel-card:hover::before, .sel-card:focus-visible::before { transform: scale(1.06); filter: brightness(1.12); }
+.sel-card:active { transform: scale(.99); }
+.sc-no { position: absolute; top: 14px; right: 18px; font-size: 12px; letter-spacing: .3em; opacity: .7; }
+.sc-en { font-size: clamp(11px, 2.4vw, 13px); letter-spacing: .34em; opacity: .85; }
+.sc-ja { font-weight: 300; font-size: clamp(30px, 8vw, 52px); letter-spacing: .2em; line-height: 1.15; }
+.sc-line { margin-top: 6px; font-size: clamp(13px, 3.2vw, 16px); letter-spacing: .22em; }
+.sc-sub { font-size: 11px; letter-spacing: .22em; color: #dfe6f4; opacity: .75; }
+.c-sapporo::before { background:
+  radial-gradient(2px 2px at 12% 20%, #fff 60%, transparent), radial-gradient(2px 2px at 38% 55%, #fff 60%, transparent), radial-gradient(1.5px 1.5px at 62% 18%, #fff 60%, transparent),
+  radial-gradient(2px 2px at 80% 45%, #fff 60%, transparent), radial-gradient(1.5px 1.5px at 90% 78%, #fff 60%, transparent), radial-gradient(1.5px 1.5px at 24% 82%, #fff 60%, transparent),
+  linear-gradient(180deg, #1a2a4a 0%, #3a5a86 55%, #a9bdd6 100%); animation: snow 14s linear infinite; background-size: 100% 100%; }
+@keyframes snow { to { background-position: 0 40px, 0 40px, 0 40px, 0 40px, 0 40px, 0 40px, 0 0; } }
+.c-sendai::before { background:
+  repeating-linear-gradient(90deg, rgba(255, 120, 150, .0) 0 26px, rgba(255, 120, 150, .22) 26px 30px, rgba(255, 220, 90, .0) 30px 52px, rgba(255, 220, 90, .2) 52px 56px, rgba(90, 200, 255, 0) 56px 78px, rgba(90, 200, 255, .2) 78px 82px, rgba(150, 230, 150, 0) 82px 104px, rgba(150, 230, 150, .18) 104px 108px),
+  linear-gradient(180deg, #1b1840 0%, #5a3a78 48%, #e88a5a 100%); }
+.sel-foot { margin: 0; padding-top: 2svh; text-align: center; font-size: 11px; letter-spacing: .26em; color: #7f8aa3; }
+@media (prefers-reduced-motion: reduce) { .c-sapporo::before { animation: none; } .sel-card::before { transition: none; } }
+
+.menu-btn { position: fixed; top: max(12px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); z-index: 15; display: flex; gap: 8px; align-items: center; padding: 8px 12px; border: 1px solid rgba(255, 255, 255, .22); border-radius: 999px;
+  background: rgba(6, 10, 20, .38); color: var(--text); font: 11px/1 inherit; letter-spacing: .26em; cursor: pointer; opacity: .78; -webkit-tap-highlight-color: transparent; backdrop-filter: blur(6px); }
+.menu-btn:hover, .menu-btn[aria-expanded="true"] { opacity: 1; }
+.mb-chev { font-size: 9px; letter-spacing: 0; }
+.menu { position: fixed; top: calc(max(12px, env(safe-area-inset-top)) + 40px); right: max(14px, env(safe-area-inset-right)); z-index: 16; min-width: 190px; padding: 6px; border: 1px solid rgba(255, 255, 255, .2); border-radius: 8px; background: rgba(6, 10, 20, .82); backdrop-filter: blur(10px); }
+.mn-item { display: flex; justify-content: space-between; gap: 18px; width: 100%; padding: 11px 12px; border: 0; border-radius: 5px; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.mn-item:hover, .mn-item:focus-visible { background: rgba(255, 255, 255, .1); outline: none; }
+.mn-item.on { color: var(--accent); }
+.mn-en { font-size: 11px; letter-spacing: .26em; } .mn-ja { font-size: 12px; opacity: .8; }
+.mn-all { margin-top: 4px; border-top: 1px solid rgba(255, 255, 255, .12); border-radius: 0 0 5px 5px; }
+
+.finale { position: fixed; left: 0; right: 0; bottom: max(2svh, calc(env(safe-area-inset-bottom) + 6px)); z-index: 14; display: flex; justify-content: center; opacity: 0; pointer-events: none; will-change: opacity, transform; }
+.finale.live { pointer-events: auto; }
+.fin-btn { display: grid; gap: 3px; justify-items: center; padding: 8px 18px; border: 0; background: none; color: var(--text); font: inherit; cursor: pointer; text-shadow: 0 1px 12px rgba(0, 0, 0, .7); -webkit-tap-highlight-color: transparent; }
+.fin-main { font-size: clamp(12px, 3.2vw, 15px); letter-spacing: .32em; border-bottom: 1px solid rgba(255, 255, 255, .5); padding-bottom: 4px; }
+.fin-sub { font-size: 10px; letter-spacing: .2em; opacity: .75; }
+.fin-btn:hover .fin-main, .fin-btn:focus-visible .fin-main { border-bottom-color: var(--accent); color: var(--accent); }

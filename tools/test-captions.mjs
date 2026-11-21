@@ -22,7 +22,7 @@ await new Promise((r) => srv.once('listening', r));
 const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 for (const [name, vp] of [['portrait', { width: 390, height: 844 }], ['landscape', { width: 960, height: 540 }]]) {
   const pg = await (await b.newContext({ viewport: vp, deviceScaleFactor: 1 })).newPage();
-  await pg.goto(`http://127.0.0.1:${srv.address().port}/scroll.html?three=local`);
+  await pg.goto(`http://127.0.0.1:${srv.address().port}/scroll.html?city=sapporo&three=local`);
   await pg.waitForFunction(() => window.__ready || window.__bootError, null, { timeout: 240000 });
   await pg.waitForTimeout(3000);
   const first = await pg.evaluate(() => window.__scroll.captionDom().map((c) => `${c.id}:${c.opacity}`).join(' '));

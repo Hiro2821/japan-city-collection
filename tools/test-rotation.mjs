@@ -7,7 +7,7 @@ const srv = http.createServer((q, r) => { const f = path.join(ROOT, path.normali
 await new Promise((r) => srv.once('listening', r));
 const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const pg = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 })).newPage();
-await pg.goto(`http://127.0.0.1:${srv.address().port}/scroll.html?three=local&tier=T0`);
+await pg.goto(`http://127.0.0.1:${srv.address().port}/scroll.html?city=sapporo&three=local&tier=T0`);
 await pg.waitForFunction(() => window.__ready || window.__bootError, null, { timeout: 240000 });
 // ソフトウェア描画ではフレームが重くタイマが遅れるため、スクロール位置から求めた p が落ち着くまで待つ（最大 30 秒）
 const P = async () => { for (let i = 0; i < 60; i++) { const r = await pg.evaluate(() => { const t = document.getElementById('track'), s = document.getElementById('stage'); const real = Math.min(1, Math.max(0, scrollY / (t.offsetHeight - s.offsetHeight))); return { p: +window.__scroll.state().p.toFixed(4), stable: +window.__scroll.pStable().toFixed(4), pFromScroll: +real.toFixed(4), scrollY: Math.round(scrollY) }; });

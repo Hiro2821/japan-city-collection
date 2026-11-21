@@ -53,7 +53,7 @@ try {
     const page = await ctx.newPage();
     page.on('console', (m) => { if (['error', 'warning'].includes(m.type())) console.log(`[${name} ${m.type()}]`, m.text().slice(0, 300)); });
     page.on('pageerror', (e) => console.log('[pageerror]', e.message));
-    await page.goto(`${base}/scroll.html?three=local${real ? '' : '&freeze=1'}${query ? '&' + query : ''}`);
+    await page.goto(`${base}/scroll.html?three=local${real ? '' : '&freeze=1'}${/(^|&)city=/.test(query) ? '' : '&city=sapporo'}${query ? '&' + query : ''}`);
     await page.waitForFunction(() => window.__ready === true || window.__bootError, null, { timeout: 240000 });
     const err = await page.evaluate(() => window.__bootError);
     if (err) throw new Error('boot error: ' + err);

@@ -16,7 +16,7 @@ await new Promise((r) => srv.once('listening', r));
 const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
 const pg = await ctx.newPage();
-await pg.goto(`http://127.0.0.1:${srv.address().port}/scroll.html?three=local&freeze=1&debug=1`);
+await pg.goto(`http://127.0.0.1:${srv.address().port}/scroll.html?city=sapporo&three=local&freeze=1&debug=1`);
 await pg.waitForFunction(() => window.__ready || window.__bootError, null, { timeout: 240000 });
 const info = () => pg.evaluate(() => { const s = window.__scroll, st = s.state(); const rt = s.renderer.composer.renderTarget1; return { tier: s.tier(), canvas: `${st.width}×${st.height}`, MP: +(st.width * st.height / 1e6).toFixed(3), dpr: st.dpr, scale: +st.scale.toFixed(4), msaa: s.renderer.samples, rtSamples: rt.samples, dof: s.renderer.dofOn, snow: s.city.snowCount, snowMode: st.snowMode, coarse: matchMedia('(pointer: coarse)').matches }; });
 console.log('# iPhone 想定（390×844, DPR3, モバイルエミュレーション）');

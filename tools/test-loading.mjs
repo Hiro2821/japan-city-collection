@@ -8,10 +8,10 @@ await new Promise((r) => srv.once('listening', r));
 const base = `http://127.0.0.1:${srv.address().port}`;
 const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const cases = [
-  ['A 既定（バンドル）', '/scroll.html?freeze=1', null],
-  ['B ?bundle=0 + ?three=local（モジュール版）', '/scroll.html?bundle=0&three=local&freeze=1', null],
-  ['C バンドル欠損 → 自動でモジュール版（Three はローカル）', '/scroll.html?three=local&freeze=1', 'bundle'],
-  ['D ?bundle=0 かつ CDN 不通 → ローカル vendor/three に自動切替', '/scroll.html?bundle=0&freeze=1', 'cdn'],
+  ['A 既定（バンドル）', '/scroll.html?city=sapporo&freeze=1', null],
+  ['B ?bundle=0 + ?three=local（モジュール版）', '/scroll.html?city=sapporo&bundle=0&three=local&freeze=1', null],
+  ['C バンドル欠損 → 自動でモジュール版（Three はローカル）', '/scroll.html?city=sapporo&three=local&freeze=1', 'bundle'],
+  ['D ?bundle=0 かつ CDN 不通 → ローカル vendor/three に自動切替', '/scroll.html?city=sapporo&bundle=0&freeze=1', 'cdn'],
 ];
 for (const [name, url, block] of cases) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
