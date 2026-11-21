@@ -94,10 +94,11 @@ export const BLEND_LIFT = 30;
  */
 export class ScrollRig {
   constructor(path) {
-    const { globalStart, duration = DURATION, landscapeKeys, adj, portraitSpec, axis } = path;
+    const { globalStart, duration = DURATION, landscapeKeys, adj, portraitSpec, axis, portraitKeys: pKeys } = path;
     this.t0 = globalStart; this.dur = duration;
     this.landscape = new CameraRig(landscapeKeys, { shakeAmp: 0.1, shakeSeed: 4.0, timeWarp: warp });
-    this.portrait = new ArcRig(portraitKeys(portraitSpec, axis), { t0: globalStart, dur: duration });
+    // 縦画面のキーは「軸周回の仕様（portraitSpec+axis）」か、完成したキー列（portraitKeys。PathRig が使う）のどちらか。
+    this.portrait = new ArcRig(pKeys ?? portraitKeys(portraitSpec, axis), { t0: globalStart, dur: duration });
     this.adj = adj;
     this.weight = 0; // 縦画面経路の重み（0=横, 1=縦）
     this.blendLift = path.blendLift ?? BLEND_LIFT;
@@ -108,7 +109,7 @@ export class ScrollRig {
 
   landscapeAt(tGlobal) {
     const s = this.landscape.sample(tGlobal);
-    const o = adjustAt(this.adj, this.pOf(tGlobal));
+    const o = this.adj ? adjustAt(this.adj, this.pOf(tGlobal)) : null;
     if (o) {
       s.position = s.position.map((v, i) => v + o[i]);
       s.target = s.target.map((v, i) => v + o[3 + i]);
@@ -127,6 +128,47 @@ export class ScrollRig {
     const mix = (a, b) => a.map((v, i) => v + (b[i] - v) * w);
     const pos = mix(L.position, P.position); pos[1] += this.blendLift * 4 * w * (1 - w);
     return { position: pos, target: mix(L.target, P.target), fov: L.fov + (P.fov - L.fov) * w };
+  }
+}
+
+// ---- 通り沿い経路（PathRig）：縦画面を「折れ線（通りの中心線）に沿ったドリー」で作る。軸周回（ArcRig）とは別の都市共通の部品。
+/** 折れ線（xz 平面）。長さ・任意の距離 s(m) での位置と進行方向を返す。 */
+export class Polyline {
+  constructor(pts) {
+    this.pts = pts; this.cum = [0];
+    for (let i = 1; i < pts.length; i++) this.cum.push(this.cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    this.length = this.cum[pts.length - 1];
+  }
+  /** s(m) は両端でクランプ。戻り値 [x, z, dx, dz]（dx,dz は単位進行方向）。 */
+  at(s) {
+    const P = this.pts, n = P.length, c = this.cum;
+    const ss = Math.min(this.length, Math.max(0, s));
+    let i = 0; while (i < n - 2 && ss > c[i + 1]) i++;
+    const L = Math.max(1e-9, c[i + 1] - c[i]), u = (ss - c[i]) / L;
+    return [P[i][0] + (P[i + 1][0] - P[i][0]) * u, P[i][1] + (P[i + 1][1] - P[i][1]) * u, (P[i + 1][0] - P[i][0]) / L, (P[i + 1][1] - P[i][1]) / L];
+  }
+}
+
+/**
+ * 通り沿いのドリー仕様 → ArcRig 用のキー。
+ *   spec の各行: [s(0..1: 折れ線の何割の位置か), 高さy(m), 注視点y(m), fov, 相対速度, 先読み距離(m), 横ずれ(m: 進行方向の右が正)]
+ *   カメラは折れ線上（＋横ずれ）に置き、注視点は「先読み距離」だけ先の折れ線上の点（高さ ty）。
+ */
+export function dollyKeys(poly, spec) {
+  return spec.map(([f, y, ty, fov, speed, ahead = 80, side = 0]) => {
+    const s = f * poly.length;
+    const [x, z, dx, dz] = poly.at(s);
+    const [tx, tz] = poly.at(s + ahead);
+    return { pos: [x - dz * side, y, z + dx * side], target: [tx, ty, tz], fov, speed };
+  });
+}
+
+/** 通り沿い経路のリグ。契約上は ScrollRig と同じ sample(tGlobal, w)。縦画面だけが折れ線ドリーで、横画面は ScrollRig と同じ。 */
+export class PathRig extends ScrollRig {
+  constructor(path) {
+    const poly = new Polyline(path.route);
+    super({ ...path, portraitKeys: dollyKeys(poly, path.dolly) });
+    this.poly = poly;
   }
 }
 

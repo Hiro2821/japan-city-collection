@@ -5,6 +5,7 @@ import { validateCity } from '../city-api.js';
 export const DEFAULT_CITY = 'sapporo';
 const LOADERS = {
   sapporo: () => import('./sapporo/index.js'),
+  sendai: () => import('./sendai/index.js'),
 };
 export const cityIds = () => Object.keys(LOADERS);
 
