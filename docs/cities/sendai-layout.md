@@ -55,3 +55,8 @@
 - 仙台市「仙台駅前のペデストリアンデッキ」https://www.city.sendai.jp/ryokuchihozen/reiwa100sen/ichiran/012.html
 - 仙台市「名所 定禅寺通（ケヤキ並木）」https://www.city.sendai.jp/ryokuchihozen/mesho100sen/ichiran/022.html
 - nippon.com「仙台七夕」https://www.nippon.com/ja/guide-to-japan/gu008003
+
+## 最終採用値（圧縮配置・Step 5 確定）
+- 青葉通 z=230（x −372..330）／定禅寺通 z=0（x −240..110）／一番町 x=0（アーケード z 40..200）／広瀬川 x=−340／青葉山の平場 x≈−478（崖上 95 m）。
+- 実際の青葉通〜定禅寺通は約625 m、本作は約230 mに圧縮（物語の尺に合わせた意図的な圧縮）。
+- 性能実測（SwiftShader の描画統計）: 横 最大 974k tris / 233 calls（中央値約612k）、縦 最大 891k / 138 calls（中央値約517k）。
