@@ -16,8 +16,9 @@ import { buildStation } from './station.js';
 import { lampList, buildLampPoles } from './lamps.js';
 import { buildShops } from './shops.js';
 import { buildStreaks } from './streaks.js';
+import { buildViaduct, buildFarCity, buildTower, buildFuji, makeFarMaterial } from './far.js';
 import { createCars, createPedestrians } from '../../../lib/traffic.js';
-import { STREETS, PLAZAS, CITY_BOX, MOAT, FACADE_X, VIADUCT, SOUTH_Z, NORTH_Z, SUN_DIR as SUN } from './layout.js';
+import { STREETS, PLAZAS, CITY_BOX, MOAT, FACADE_X, VIADUCT, SOUTH_Z, NORTH_Z, TOWER, SUN_DIR as SUN } from './layout.js';
 
 const rectOf = (s) => (s.dir === 'x'
   ? { x0: s.a, x1: s.b, z0: s.c - s.w / 2, z1: s.c + s.w / 2 }
@@ -77,6 +78,13 @@ export class TokyoScrollScene extends CityScene {
     const sh = buildShops(rng); sh.meshes.forEach((m) => scene.add(m)); this.shops = sh;
     this.streaks = buildStreaks(rng); scene.add(this.streaks.mesh);
     this._buildTraffic(rng);
+    // ゾーンD：高架・電車の光の帯・遠景の街区と窓明かり・東京タワー・富士山
+    this.viaduct = buildViaduct(); this.viaduct.meshes.forEach((m) => scene.add(m));
+    this.tower = buildTower(); scene.add(this.tower.near, this.tower.far, this.tower.glow.points);
+    const fm = makeFarMaterial(rng); this.farMat = fm.mat; this.farWin = fm.uniforms;
+    const farBatch = new BuildingBatch(THREE, this.farMat, 16000);
+    this.far = buildFarCity(rng, farBatch, TOWER); this.farMesh = farBatch.build({ castShadow: false }); scene.add(this.farMesh, this.far.glow.points);
+    this.fuji = buildFuji(); scene.add(this.fuji.mesh);
 
     this.rig = new PathRig(PATH);
 
@@ -97,7 +105,7 @@ export class TokyoScrollScene extends CityScene {
     this.look.grade = { uShadowAmt: 0.3, uVig: 0.2, uSat: 1.04, uGrain: 0.02, uAberr: 0.0006, uHighTint: new THREE.Color(1.03, 1.0, 0.96) };
     this._ca = new THREE.Color(); this._cb = new THREE.Color();
 
-    applyScrollEffects(this, { tiled: this.fx.tiled, haze: this.fx.haze, tileExclude: [this.boxMesh, this.cars.mesh, this.peds.mesh, this.pedsNaka.mesh], skyUniforms: this.sky.uniforms });
+    applyScrollEffects(this, { tiled: this.fx.tiled, haze: this.fx.haze, tileExclude: [this.boxMesh, this.farMesh, this.viaduct.meshes[0], this.viaduct.meshes[1], this.tower.near, this.tower.far, this.fuji.mesh, this.cars.mesh, this.peds.mesh, this.pedsNaka.mesh], skyUniforms: this.sky.uniforms });
   }
 
   applyTime(t) {
@@ -114,11 +122,13 @@ export class TokyoScrollScene extends CityScene {
     this.sun.intensity = sp; u.uSunStrength.value = Math.min(1, sp / 2);
     this.hemi.intensity = 0.5 * Math.max(0.3, 1 - this.nightU.value * 0.6);
     this.scene.environmentIntensity = this.sampleTrack('envPower', t, 0.5);
+    this._ca.set(A.horizon); this._cb.set(B.horizon); const hz = this._ca.lerp(this._cb, f);
+    this.fuji.uniforms.uBody.value.copy(hz).multiplyScalar(0.42); this.fuji.uniforms.uTop.value.copy(hz).multiplyScalar(0.62);
   }
 
   // ---------- 街区：街路に囲まれた区画を割って建物を置く。仲通り沿いは壁に見えるよう隙間なく並べ、高さは仙台より高く大きい。
   _buildBlocks(rng) {
-    const facade = createFacadeMaterial(THREE, { uNight: this.nightU, uSnow: this.snowU });
+    const facade = createFacadeMaterial(THREE, { uNight: this.nightU, uSnow: this.snowU }); this.facade = facade;
     const batch = new BuildingBatch(THREE, facade, 6000);
     const strips = STREETS.map(rectOf), keep = [...PLAZAS];
     const xs = new Set([CITY_BOX.x0, CITY_BOX.x1]), zs = new Set([CITY_BOX.z0, CITY_BOX.z1]);
@@ -217,6 +227,10 @@ export class TokyoScrollScene extends CityScene {
     this.cars.update(tg, this.carGlow.points.geometry.attributes.position.array); this.carGlow.points.geometry.attributes.position.needsUpdate = true;
     this.peds.update(tg); this.pedsNaka.update(tg);
     this.streaks.uniforms.uTime.value = tg; this.streaks.uniforms.uFog.value = fog; this.streaks.uniforms.uGain.value = 0.7 + 0.8 * n;
+    for (const g of [this.far.glow, this.tower.glow]) { g.uniforms.uProj.value = projScale; g.uniforms.uFog.value = fog; }
+    this.far.glow.uniforms.uGain.value = 0.55 + 0.9 * n;
+    const vu = this.viaduct.uniforms; vu.uTime.value = tg; vu.uFog.value = fog; vu.uGain.value = 0.7 + 0.7 * n;
+    this.tower.update(camera.position, n); this.farWin.uWinGain.value = 0.28 + 0.42 * n;
     this.shops.mat.color.setRGB(1, 1, 1).multiplyScalar(0.55 + 0.65 * n);
   }
 
