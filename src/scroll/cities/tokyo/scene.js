@@ -14,7 +14,10 @@ import { buildTrees } from './trees.js';
 import { buildLeds } from './leds.js';
 import { buildStation } from './station.js';
 import { lampList, buildLampPoles } from './lamps.js';
-import { STREETS, PLAZAS, CITY_BOX, MOAT, FACADE_X, VIADUCT, SUN_DIR as SUN } from './layout.js';
+import { buildShops } from './shops.js';
+import { buildStreaks } from './streaks.js';
+import { createCars, createPedestrians } from '../../../lib/traffic.js';
+import { STREETS, PLAZAS, CITY_BOX, MOAT, FACADE_X, VIADUCT, SOUTH_Z, NORTH_Z, SUN_DIR as SUN } from './layout.js';
 
 const rectOf = (s) => (s.dir === 'x'
   ? { x0: s.a, x1: s.b, z0: s.c - s.w / 2, z1: s.c + s.w / 2 }
@@ -71,6 +74,9 @@ export class TokyoScrollScene extends CityScene {
     this.trees = buildTrees(rng); this.trees.meshes.forEach((m) => scene.add(m));
     this.leds = buildLeds(this.trees, rng); this.leds.chunks.forEach((m) => scene.add(m));
     this._buildLamps();
+    const sh = buildShops(rng); sh.meshes.forEach((m) => scene.add(m)); this.shops = sh;
+    this.streaks = buildStreaks(rng); scene.add(this.streaks.mesh);
+    this._buildTraffic(rng);
 
     this.rig = new PathRig(PATH);
 
@@ -91,7 +97,7 @@ export class TokyoScrollScene extends CityScene {
     this.look.grade = { uShadowAmt: 0.3, uVig: 0.2, uSat: 1.04, uGrain: 0.02, uAberr: 0.0006, uHighTint: new THREE.Color(1.03, 1.0, 0.96) };
     this._ca = new THREE.Color(); this._cb = new THREE.Color();
 
-    applyScrollEffects(this, { tiled: this.fx.tiled, haze: this.fx.haze, tileExclude: [this.boxMesh], skyUniforms: this.sky.uniforms });
+    applyScrollEffects(this, { tiled: this.fx.tiled, haze: this.fx.haze, tileExclude: [this.boxMesh, this.cars.mesh, this.peds.mesh, this.pedsNaka.mesh], skyUniforms: this.sky.uniforms });
   }
 
   applyTime(t) {
@@ -159,6 +165,44 @@ export class TokyoScrollScene extends CityScene {
     this.scene.add(this.lamps.points);
   }
 
+  // ---------- 車と歩行者（札幌・仙台の部品を流用。密度は歩行者 1,000・車 500＝U-8）。仲通りは歩行者優先で車は少ない。
+  _buildTraffic(rng) {
+    const lanes = [];
+    const spacing = { 0: 95, 1: 55, 2: 420, 3: 48 };
+    for (const s of STREETS) {
+      const len = s.b - s.a, offs = s.kind === 0 ? [2.0] : s.kind === 1 ? [20.5, 25.5] : s.kind === 2 ? [1.8] : [3.6, 8.2];
+      for (const o of offs) for (const dir of [1, -1]) {
+        const n = Math.max(1, Math.round(len / spacing[s.kind]));
+        for (let k = 0; k < n; k++) {
+          const sgn = s.dir === 'x' ? (dir > 0 ? 1 : -1) : (dir > 0 ? -1 : 1);                  // 左側通行
+          lanes.push({ alongX: s.dir === 'x', dir, fixed: s.c + sgn * o * (s.kind === 1 && false ? 1 : 1), speed: rng.range(6, 11), off: rng.range(0, 4000), len, min: s.a, ph: rng() });
+        }
+      }
+    }
+    while (lanes.length > 500) lanes.splice(Math.floor(rng() * lanes.length), 1);
+    this.cars = createCars(THREE, lanes); this.scene.add(this.cars.mesh);
+    const N = lanes.length;
+    const pos = new Float32Array(N * 4 * 3), col = new Float32Array(N * 4 * 3), siz = new Float32Array(N * 4);
+    for (let i = 0; i < N; i++) for (let k = 0; k < 4; k++) {
+      const o = (i * 4 + k) * 3, head = k < 2;
+      if (head) { col[o] = 3.0; col[o + 1] = 2.9; col[o + 2] = 2.3; } else { col[o] = 2.4; col[o + 1] = 0.1; col[o + 2] = 0.07; }
+      siz[i * 4 + k] = head ? 0.7 : 0.5;
+    }
+    this.carGlow = createGlowPoints(THREE, { positions: pos, colors: col, sizes: siz, fogDensity: 0.00004, minPx: 1.4, maxPx: 12 });
+    this.scene.add(this.carGlow.points); this.carCount = N;
+    // 歩行者：東西方向（行幸通り・横断する通りの歩道）と、仲通り（南北。東西用の部品を 90° 回して使う）
+    const walkers = [];
+    const add = (z, x0, x1, n) => { for (let i = 0; i < n; i++) walkers.push({ x0, x1, z: z + rng.range(-0.8, 0.8), dir: rng() < 0.5 ? 1 : -1, speed: rng.range(0.9, 1.5), off: rng.range(0, 800), ph: rng() }); };
+    for (const z of [-33.5, 33.5]) add(z, -150, 28, 55);                                  // 行幸通りの歩道
+    add(0, 30, 340, 70); add(-20, 30, 340, 25); add(20, 30, 340, 25);                    // 駅前広場
+    for (const s of STREETS.filter((q) => q.dir === 'x' && q.kind !== 1 && q.id !== 'eitai')) for (const sd of [-1, 1]) add(s.c + sd * (s.w / 2 - 1.8), s.a + 5, s.b - 5, 9);
+    this.peds = createPedestrians(THREE, walkers); this.scene.add(this.peds.mesh);
+    const nw = [];
+    for (let i = 0; i < 520; i++) { const side = rng() < 0.5 ? -1 : 1; nw.push({ x0: -(SOUTH_Z - 14), x1: -(NORTH_Z + 14), z: side * rng.range(5.2, 10.2), dir: rng() < 0.5 ? 1 : -1, speed: rng.range(0.7, 1.4), off: rng.range(0, 800), ph: rng() }); }
+    this.pedsNaka = createPedestrians(THREE, nw); this.pedsNaka.mesh.rotation.y = Math.PI / 2; this.pedsNaka.mesh.updateMatrix(); this.scene.add(this.pedsNaka.mesh);
+    this.pedCount = walkers.length + nw.length;
+  }
+
   onBeforeRender({ t, projScale, camera }) {
     const tg = t + this.timeOffset, n = this.nightU.value, fog = this.scene.fog.density;
     this.sky.mesh.position.copy(camera.position);
@@ -169,6 +213,11 @@ export class TokyoScrollScene extends CityScene {
     this.station.mat.emissiveIntensity = 0.04 + 0.07 * n; this.station.winMat.color.setRGB(1, 0.72, 0.4).multiplyScalar(0.55 + 0.35 * n);
     this.trees.mats[0].emissiveIntensity = 0.02 + 0.04 * n;
     this.trees.updateLod(camera.position);
+    this.carGlow.uniforms.uProj.value = projScale; this.carGlow.uniforms.uFog.value = fog; this.carGlow.uniforms.uGain.value = 0.6 + 0.7 * n;
+    this.cars.update(tg, this.carGlow.points.geometry.attributes.position.array); this.carGlow.points.geometry.attributes.position.needsUpdate = true;
+    this.peds.update(tg); this.pedsNaka.update(tg);
+    this.streaks.uniforms.uTime.value = tg; this.streaks.uniforms.uFog.value = fog; this.streaks.uniforms.uGain.value = 0.7 + 0.8 * n;
+    this.shops.mat.color.setRGB(1, 1, 1).multiplyScalar(0.55 + 0.65 * n);
   }
 
   /** 環境アニメーション（きらめき）：Step 3 で実装。 */

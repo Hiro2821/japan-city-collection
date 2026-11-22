@@ -80,7 +80,7 @@ export function buildGround(nightU, spillU) {
           float nearRoad = surf > -0.5 ? (1.0 - smoothstep(18.0, 30.0, lat)) : 0.0;
           gEmis = uNight * vec3(1.0, 0.78, 0.5) * nearRoad * (0.012 + 0.03 * pool);
           float gold = 0.0;
-          if (kindHit > 1.5 && kindHit < 2.5 && p.y > ${(-480).toFixed(1)} && p.y < 740.0 ) gold = 1.0 - smoothstep(6.0, 16.0, lat);
+          if (kindHit > 1.5 && kindHit < 2.5 && p.y > ${(-480).toFixed(1)} && p.y < 740.0 ) gold = (0.35 * (1.0 - smoothstep(0.0, 9.0, lat)) + 0.65 * smoothstep(3.0, 7.0, lat) * (1.0 - smoothstep(8.5, 12.0, lat))) * (0.7 + 0.3 * pow(0.5 + 0.5 * cos(6.2831853 * alongRoad / 9.0), 2.0));
           if (kindHit > 0.5 && kindHit < 1.5) gold = (1.0 - smoothstep(14.0, 30.0, lat)) * 0.6;
           float wave = 0.85 + 0.15 * sin(alongRoad * 0.12);
           gEmis += uSpill * vec3(1.0, 0.68, 0.30) * gold * wave * (0.05 + 0.03 * fine);
