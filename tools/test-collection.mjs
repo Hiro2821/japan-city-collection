@@ -17,7 +17,7 @@ for (const [name, vp] of [['landscape', { width: 1280, height: 720 }], ['portrai
   // 1 選択画面
   await pg.goto(`${base}/scroll.html?three=local&freeze=1`); await ready();
   ok(await pg.evaluate(() => !document.getElementById('select').hidden && !window.__scroll), `${name}: 都市指定なし → 選択画面（シーン未構築）`);
-  ok(await pg.evaluate(() => document.querySelectorAll('.sel-card').length === 2), `${name}: カード 2 枚`);
+  ok(await pg.evaluate(() => document.querySelectorAll('.sel-card').length === 3), `${name}: カード 3 枚（札幌・仙台・東京）`);
   await pg.screenshot({ path: `${OUT}/${name}_select.png` });
   // 2 カード → 開始
   await pg.click('.sel-card.c-sendai'); await pg.waitForFunction(() => window.__ready === true && window.__scroll, null, { timeout: 240000 });
@@ -36,14 +36,20 @@ for (const [name, vp] of [['landscape', { width: 1280, height: 720 }], ['portrai
   await pg.evaluate(() => window.__scroll.renderAtProgress(1.0)); await pg.click('.fin-btn'); await pg.waitForFunction(() => window.__ready === true && window.__scroll?.cityModule.meta.id === 'sendai', null, { timeout: 240000 });
   ok(await pg.evaluate(() => scrollY === 0 && window.__scroll.state().p === 0), `${name}: 案内タップで仙台へ・p=0`);
   await pg.evaluate(() => window.__scroll.renderAtProgress(1.0));
-  const fin2 = await pg.evaluate(() => document.querySelector('.fin-main').textContent); ok(fin2.startsWith('JAPAN'), `${name}: 最終都市は締め表示「${fin2}」`);
+  const fin1 = await pg.evaluate(() => document.querySelector('.fin-main').textContent); ok(fin1 === 'Next — TOKYO', `${name}: 仙台フィナーレ「${fin1}」`);
   await pg.screenshot({ path: `${OUT}/${name}_sendai_finale.png` });
+  await pg.click('.fin-btn'); await pg.waitForFunction(() => window.__ready === true && window.__scroll?.cityModule.meta.id === 'tokyo', null, { timeout: 240000 });
+  ok(await pg.evaluate(() => scrollY === 0 && window.__scroll.state().p === 0 && location.search.includes('city=tokyo') && document.querySelectorAll('.cap').length === window.__scroll.cityModule.captions.length), `${name}: 案内タップで東京へ・p=0・キャプション入れ替え`);
+  await pg.evaluate(() => window.__scroll.renderAtProgress(1.0));
+  const fin2 = await pg.evaluate(() => document.querySelector('.fin-main').textContent); ok(fin2.startsWith('JAPAN'), `${name}: 最終都市（東京）は締め表示「${fin2}」`);
+  await pg.screenshot({ path: `${OUT}/${name}_tokyo_finale.png` });
   await pg.click('.fin-btn'); await pg.waitForFunction(() => window.__select === true);
   ok(await pg.evaluate(() => !document.getElementById('select').hidden && !location.search.includes('city=')), `${name}: 締めから選択画面へ`);
   // 5 直リンク・パラメータ保持
   await pg.goto(`${base}/scroll.html?city=sapporo&three=local&freeze=1&debug=1&tier=T0&haze=1&grade=1`); await ready();
   ok(await pg.evaluate(() => document.getElementById('select').hidden && window.__scroll.cityModule.meta.id === 'sapporo' && window.__scroll.tier() === 'T0' && !!document.getElementById('dbg')), `${name}: 直リンクは選択画面なし・tier/debug 有効`);
-  await pg.click('.menu-btn'); await pg.click('.menu [data-city=sendai]'); await pg.waitForFunction(() => window.__scroll?.cityModule.meta.id === 'sendai');
+  await pg.click('.menu-btn'); await pg.click('.menu [data-city=tokyo]'); await pg.waitForFunction(() => window.__ready === true && window.__scroll?.cityModule.meta.id === 'tokyo', null, { timeout: 240000 });
+  await pg.click('.menu-btn'); await pg.click('.menu [data-city=sendai]'); await pg.waitForFunction(() => window.__ready === true && window.__scroll?.cityModule.meta.id === 'sendai', null, { timeout: 240000 });
   ok(await pg.evaluate(() => document.querySelectorAll('#dbg').length === 1 && window.__scroll.tier() === 'T0' && location.search.includes('tier=T0') && location.search.includes('debug=1')), `${name}: 切替後も tier/debug 保持・debug パネル重複なし`);
   ok(errs.length === 0, `${name}: コンソールエラーなし ${errs.join('|').slice(0, 200)}`);
 }
