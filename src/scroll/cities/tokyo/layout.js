@@ -18,10 +18,9 @@ export const STREETS = [
   { id: 'harumi', dir: 'x', c: SOUTH_Z, w: 35, a: -330, b: 480, kind: 3 },
   { id: 'eitai', dir: 'x', c: NORTH_Z, w: 35, a: -330, b: 480, kind: 3 },
   // 横断する通り（★位置は概略。幅 14〜18 m）
-  ...[-385, -270, -155, 115, 230, 345, 460, 575].map((z) => ({ id: `x${z}`, dir: 'x', c: z, w: 16, a: -330, b: 330, kind: 0 })),
+  ...[-385, -270, -155, 115, 230, 345, 460, 575].map((z) => ({ id: `x${z}`, dir: 'x', c: z, w: 16, a: Math.abs(z) < 330 ? MOAT_X : -330, b: 330, kind: 0 })),
   // 南北の街路（仲通りの両側）
   { id: 'wA', dir: 'z', c: -150, w: 18, a: NORTH_Z, b: SOUTH_Z, kind: 0 },
-  { id: 'wB', dir: 'z', c: -300, w: 16, a: NORTH_Z, b: SOUTH_Z, kind: 0 },
   { id: 'eA', dir: 'z', c: 150, w: 20, a: NORTH_Z, b: SOUTH_Z, kind: 0 },
   { id: 'eB', dir: 'z', c: 250, w: 18, a: NORTH_Z, b: SOUTH_Z, kind: 0 },
 ];
