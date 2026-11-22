@@ -172,7 +172,7 @@ function latticeGeo(step, thick, bayDiv) {
 }
 export function buildTower() {
   const mat = new THREE.MeshStandardMaterial({ color: 0x3a1c08, roughness: 0.7, metalness: 0.0, emissive: new THREE.Color(1.0, 0.36, 0.07), emissiveIntensity: 0.9 });
-  const near = new THREE.Mesh(latticeGeo(2.4, 0.42, 13), mat), far = new THREE.Mesh(latticeGeo(9, 1.5, 40), mat);
+  const near = new THREE.Mesh(latticeGeo(1.7, 0.4, 11), mat), far = new THREE.Mesh(latticeGeo(9, 1.5, 40), mat);
   for (const m of [near, far]) { m.position.set(TOWER.x, 0, TOWER.z); m.rotation.y = 0; m.frustumCulled = false; }
   near.name = 'tower-near'; far.name = 'tower-far';
   // LED の縁取り（脚と頂部）＋足元の投光＋頂部の標識灯
@@ -184,7 +184,7 @@ export function buildTower() {
   const glow = createGlowPoints(THREE, { positions: new Float32Array(pos), colors: new Float32Array(col), sizes: new Float32Array(siz), fogDensity: 0.00004, minPx: 1.4, maxPx: 16 });
   return {
     near, far, mat, glow, trisNear: near.geometry.index.count / 3, trisFar: far.geometry.index.count / 3,
-    update(cam, n) { const d = Math.hypot(cam.x - TOWER.x, cam.z - TOWER.z, Math.max(0, cam.y - 160) * 0.5); near.visible = d < 650; far.visible = !near.visible; mat.emissiveIntensity = 0.75 + 0.55 * n; glow.uniforms.uGain.value = 0.7 + 0.8 * n; },
+    update(cam, n) { const d = Math.hypot(cam.x - TOWER.x, cam.z - TOWER.z, Math.max(0, cam.y - 160) * 0.5); near.visible = d < 650; far.visible = !near.visible; mat.emissiveIntensity = 0.5 + 0.4 * n; glow.uniforms.uGain.value = 0.7 + 0.8 * n; },
   };
 }
 
