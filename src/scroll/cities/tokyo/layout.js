@@ -50,4 +50,4 @@ export const FUJI = (() => { const [x, z] = toward(FUJI_BEARING, FUJI_DIST); ret
 export const SUN_DIR = [-0.93, -0.07, 0.36];
 
 // ---- カメラ経路の世界座標（縦画面ドリーの折れ線＝通りの中心線）：A 駅前→行幸通りを西へ / B・C 仲通りを南へ
-export const ROUTE = [[400, 0], [0, 0], [0, 700]];
+export const ROUTE = [[430, 0], [0, 0], [0, 700], [-322, 1082]];   // 最後の 500 m は仲通り南端から東京タワーの方位（221°）へ。上空を飛ぶ区間（縦画面のフィナーレ）
