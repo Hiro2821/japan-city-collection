@@ -48,6 +48,11 @@ body.selecting #track { display: none; }
 .c-sendai::before { background:
   repeating-linear-gradient(90deg, rgba(255, 120, 150, .0) 0 26px, rgba(255, 120, 150, .22) 26px 30px, rgba(255, 220, 90, .0) 30px 52px, rgba(255, 220, 90, .2) 52px 56px, rgba(90, 200, 255, 0) 56px 78px, rgba(90, 200, 255, .2) 78px 82px, rgba(150, 230, 150, 0) 82px 104px, rgba(150, 230, 150, .18) 104px 108px),
   linear-gradient(180deg, #1b1840 0%, #5a3a78 48%, #e88a5a 100%); }
+.c-tokyo::before { background:
+  radial-gradient(3px 3px at 12% 34%, #f6d98a 55%, transparent), radial-gradient(2px 2px at 26% 22%, #f6d98a 55%, transparent), radial-gradient(3px 3px at 40% 40%, #f6d98a 55%, transparent), radial-gradient(2px 2px at 54% 26%, #ffe6a8 55%, transparent),
+  radial-gradient(3px 3px at 58% 70%, #f6d98a 55%, transparent), radial-gradient(2px 2px at 70% 86%, #f6d98a 55%, transparent), radial-gradient(3px 3px at 82% 74%, #ffe6a8 55%, transparent), radial-gradient(2px 2px at 92% 66%, #f6d98a 55%, transparent),
+  radial-gradient(ellipse 70% 40% at 50% 100%, rgba(232, 184, 96, .55), transparent),
+  linear-gradient(180deg, #0a1030 0%, #1a2a5a 55%, #3a3a5c 100%); }
 .sel-foot { margin: 0; padding-top: 2svh; text-align: center; font-size: 11px; letter-spacing: .26em; color: #7f8aa3; }
 @media (prefers-reduced-motion: reduce) { .c-sapporo::before { animation: none; } .sel-card::before { transition: none; } }
 
