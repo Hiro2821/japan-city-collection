@@ -13,6 +13,7 @@ const el = (tag, cls, text, attrs) => {
 export const CARD_INFO = {
   sapporo: { line: '冬 — 雪', lineEn: 'Winter · Snow' },
   sendai: { line: '七夕 — 夏の夕方', lineEn: 'Tanabata · Summer Dusk' },
+  tokyo: { line: '冬 — イルミネーション', lineEn: 'Winter · Illumination' },
 };
 
 export function createUI({ series, cities, onPick, onCollection }) {

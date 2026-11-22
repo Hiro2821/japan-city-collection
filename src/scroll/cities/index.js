@@ -6,6 +6,7 @@ export const DEFAULT_CITY = 'sapporo';
 const LOADERS = {
   sapporo: () => import('./sapporo/index.js'),
   sendai: () => import('./sendai/index.js'),
+  tokyo: () => import('./tokyo/index.js'),
 };
 export const cityIds = () => Object.keys(LOADERS);
 
