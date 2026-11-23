@@ -2,7 +2,7 @@
 //   ショットは 'odori'（SCENE 03・グローバル 11–18 秒）固定。カメラ経路は ScrollRig（横・縦・混合）に差し替える。
 import { SapporoScene } from '../../../scenes/sapporo.js';
 import * as THREE from 'three';
-import { createMountains, sapporoHeight } from '../../../lib/terrain.js';
+import { buildSapporoMountains } from './mountains.js';
 import { ScrollRig } from '../../rig.js';
 import { applyScrollEffects } from '../../city-api.js';
 import { SAPPORO_PATH } from './camera.js';
@@ -23,7 +23,7 @@ export class SapporoScrollScene extends SapporoScene {
     // 粗い分割で呼び直す。動画版コード（src/scenes・src/lib）は変更しない。
     const old = this.scene.children.find((o) => o.name === 'mountains');
     if (old) { this.scene.remove(old); old.geometry.dispose(); }
-    this.mountains = createMountains(THREE, { heightFn: sapporoHeight(), y: -4, rings: MTN_RINGS, segs: MTN_SEGS });
+    this.mountains = buildSapporoMountains({ rings: MTN_RINGS, segs: MTN_SEGS, y: -4 });
     this.scene.add(this.mountains);
     // 遠景の作り込み（Phase 2-3 Step B-2）：遠方住宅街の高さ・窓明かりの地区ごとの変化、外側の住宅街、平原の起伏と色むら
     const boxMesh = this.scene.children.find((o) => o.isInstancedMesh && o.count === this.boxes.n);
