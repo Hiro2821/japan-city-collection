@@ -53,6 +53,11 @@ body.selecting #track { display: none; }
   radial-gradient(3px 3px at 58% 70%, #f6d98a 55%, transparent), radial-gradient(2px 2px at 70% 86%, #f6d98a 55%, transparent), radial-gradient(3px 3px at 82% 74%, #ffe6a8 55%, transparent), radial-gradient(2px 2px at 92% 66%, #f6d98a 55%, transparent),
   radial-gradient(ellipse 70% 40% at 50% 100%, rgba(232, 184, 96, .55), transparent),
   linear-gradient(180deg, #0a1030 0%, #1a2a5a 55%, #3a3a5c 100%); }
+.c-osaka::before { background:
+  radial-gradient(3px 3px at 14% 30%, #ff7d9c 55%, transparent), radial-gradient(2px 2px at 28% 20%, #7dd8ff 55%, transparent), radial-gradient(3px 3px at 42% 38%, #ffd98a 55%, transparent), radial-gradient(2px 2px at 55% 24%, #ff9ce0 55%, transparent),
+  radial-gradient(3px 3px at 60% 68%, #7dd8ff 55%, transparent), radial-gradient(2px 2px at 72% 84%, #ffd98a 55%, transparent), radial-gradient(3px 3px at 84% 72%, #ff7d9c 55%, transparent), radial-gradient(2px 2px at 93% 62%, #ffe6a8 55%, transparent),
+  radial-gradient(ellipse 70% 40% at 50% 100%, rgba(255, 150, 80, .45), transparent),
+  linear-gradient(180deg, #060a24 0%, #14204e 55%, #2c2a55 100%); }
 .sel-foot { margin: 0; padding-top: 2svh; text-align: center; font-size: 11px; letter-spacing: .26em; color: #7f8aa3; }
 @media (prefers-reduced-motion: reduce) { .c-sapporo::before { animation: none; } .sel-card::before { transition: none; } }
 
