@@ -15,6 +15,7 @@ import { PATH } from './camera.js';
 import { buildTrees } from './trees.js';
 import { buildArcadeFrame, buildShopfronts, arcadeLights, tanabataItems, buildPoles as buildBamboo, ARCADE } from './arcade.js';
 import { buildStreamers } from './tanabata.js';
+const TREE_FAR_DIST = 260;   // これより遠いケヤキは 48 三角形の簡易形に切り替える（m）
 import { buildRiver, buildBridge, buildForest, buildStatue, buildPlateau, farCityLights } from './castle.js';
 import { lampList, signalList, buildPoles, buildDeck } from './street.js';
 import { STREETS, PARKS, PLAZAS, CITY_BOX, BLUFF, AOBA_Z, JOZ_Z, RIVER_X, groundY, SUN_DIR as SUN } from './layout.js';
@@ -116,7 +117,7 @@ export class SendaiScrollScene extends CityScene {
     // ---- 共通の描画負荷対策（タイル分割＋視錐台カリング）と霞。動くもの・描画順を保つ建物の箱は分割しない。
     applyScrollEffects(this, {
       tiled: this.fx.tiled, haze: this.fx.haze,
-      tileExclude: [this.cars.mesh, this.peds.mesh, this.pedsArcade.mesh, this.boxMesh],
+      tileExclude: [this.cars.mesh, this.peds.mesh, this.pedsArcade.mesh, this.boxMesh, ...this.trees.meshes],
       skyUniforms: this.sky.uniforms,
     });
   }
@@ -360,7 +361,7 @@ export class SendaiScrollScene extends CityScene {
   _buildTreesAll(rng) {
     const T = buildTrees(rng);
     T.meshes.forEach((m) => this.scene.add(m));
-    this.treeCount = T.count; this.treeTris = T.tris;
+    this.trees = T; this.treeCount = T.count; this.treeTris = T.tris;
   }
 
   // ---------- 一番町アーケードと七夕飾り（吹き流し・くす玉）
@@ -480,6 +481,8 @@ export class SendaiScrollScene extends CityScene {
     this.shopU.uShopGlow.value = 0.08 + 0.9 * n;
     this.arcadeGlow.uniforms.uProj.value = projScale; this.arcadeGlow.uniforms.uFog.value = fog; this.arcadeGlow.uniforms.uGain.value = 0.15 + 1.0 * n;
     this.lodStats = this.streamers.updateLod(camera.position, this.lodDist);
+    // ケヤキ：遠景への切替とカリング。影は最初の 1 フレームで静的にベイクされるので、その間だけ全木を近景で描く
+    this.treeStats = this.trees.update(camera, TREE_FAR_DIST, !this.sun.shadow.map);
   }
 
   /** 環境アニメーション（吹き流し）：n/1200 の割合で束を間引き、LOD 距離も縮める（スマホ軽量）。 */
