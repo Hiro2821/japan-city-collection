@@ -13,7 +13,7 @@ import { PathRig } from '../../rig.js';
 import { applyScrollEffects } from '../../city-api.js';
 import { PATH } from './camera.js';
 import { buildTrees } from './trees.js';
-import { buildArcadeFrame, buildShopfronts, arcadeLights, tanabataItems, buildPoles as buildBamboo, ARCADE } from './arcade.js';
+import { buildArcadeFrame, buildShopfronts, arcadeLights, tanabataItems, tanabataExtras, buildPoles as buildBamboo, ARCADE } from './arcade.js';
 import { buildStreamers } from './tanabata.js';
 const TREE_FAR_DIST = 260;   // これより遠いケヤキは 48 三角形の簡易形に切り替える（m）
 import { buildRiver, buildBridge, buildForest, buildStatue, buildPlateau, farCityLights } from './castle.js';
@@ -117,7 +117,7 @@ export class SendaiScrollScene extends CityScene {
     // ---- 共通の描画負荷対策（タイル分割＋視錐台カリング）と霞。動くもの・描画順を保つ建物の箱は分割しない。
     applyScrollEffects(this, {
       tiled: this.fx.tiled, haze: this.fx.haze,
-      tileExclude: [this.cars.mesh, this.peds.mesh, this.pedsArcade.mesh, this.boxMesh, ...this.trees.meshes],
+      tileExclude: [this.cars.mesh, this.peds.mesh, this.pedsArcade.mesh, this.boxMesh, ...this.trees.meshes, ...this.streamers.group.children],
       skyUniforms: this.sky.uniforms,
     });
   }
@@ -372,10 +372,11 @@ export class SendaiScrollScene extends CityScene {
     this.arcadeGlow = createGlowPoints(THREE, { ...al, fogDensity: 0.00005, minPx: 1.4, maxPx: 16 });
     this.scene.add(this.arcadeGlow.points);
     const T = tanabataItems(rng);
-    const [poles, kusu] = buildBamboo(T.poles, T.balls); this.scene.add(poles, kusu);
-    this.streamers = buildStreamers(T.items, rng, this.streamU);
+    const X = tanabataExtras(T.items.length);       // 仕様の上限（1,200 束）まで追加。専用の乱数で作る
+    const [poles, kusu] = buildBamboo([...T.poles, ...X.poles], T.balls); this.scene.add(poles, kusu);
+    this.streamers = buildStreamers(T.items, rng, this.streamU, X.items);
     this.scene.add(this.streamers.group);
-    this.decoCount = T.items.length; this.archCount = fr.archCount;
+    this.decoCount = T.items.length + X.items.length; this.archCount = fr.archCount;
   }
 
   // ---------- D 区間：広瀬川・橋・青葉山の森・城址（平場・石垣・政宗像のシルエット）・遠方の街の灯り
@@ -480,7 +481,7 @@ export class SendaiScrollScene extends CityScene {
     this.streamU.uTime.value = tg; this.streamU.uGlow.value = 0.04 + 0.5 * n;
     this.shopU.uShopGlow.value = 0.08 + 0.9 * n;
     this.arcadeGlow.uniforms.uProj.value = projScale; this.arcadeGlow.uniforms.uFog.value = fog; this.arcadeGlow.uniforms.uGain.value = 0.15 + 1.0 * n;
-    this.lodStats = this.streamers.updateLod(camera.position, this.lodDist);
+    this.lodStats = this.streamers.updateLod(camera, this.lodDist * 0.6, Math.round(this.lodDist * 260 / 150));
     // ケヤキ：遠景への切替とカリング。影は最初の 1 フレームで静的にベイクされるので、その間だけ全木を近景で描く
     this.treeStats = this.trees.update(camera, TREE_FAR_DIST, !this.sun.shadow.map);
   }

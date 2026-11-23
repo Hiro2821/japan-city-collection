@@ -2,6 +2,7 @@
 //   天蓋は骨組みだけ（上空が見える）：吹き流しが骨組みから吊られ、カメラが最後に飾りの上へ抜けられる。実在の店名・ロゴは使わない（U-3）。
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { makeRng } from '../../../lib/rng.js';
 import { STREETS, JOZ_Z, ICHI_X, PLAZAS } from './layout.js';
 
 const ARC = STREETS.find((s) => s.id === 'ichi-arcade');
@@ -112,6 +113,42 @@ export function tanabataItems(rng) {
   const pl = PLAZAS[0];
   for (let i = 0; i < 6; i++) { const x = pl.x0 + 14 + i * 14, z = pl.z1 - 4; poles.push([x, z]); add(x, 6.8, z - 0.8, 0.9); }
   return { items, poles, balls };
+}
+
+/**
+ * 吹き流し（大）を仕様の上限 1,200 束まで増やすための追加分（仕様書 §3・§6）。
+ * 共有の rng は使わず専用の乱数で作る（以降の車・歩行者などの配置を変えないため）。
+ * 配分：アーケード内を最優先（外側・内側の列を密にし、壁際にも）、定禅寺通・一番町の南北は柱を増やす。残りはアーケード内で埋める。
+ */
+export const STREAMER_LIMIT = 1200;
+export function tanabataExtras(baseCount) {
+  const rng = makeRng(20260807), items = [], poles = [];
+  const add = (x, y, z, s) => items.push({ x, y, z, s: s * (0.9 + 0.2 * rng()), yaw: rng() * 6.283, phase: rng() * 6.283 });
+  const { z0, z1 } = ARCADE;
+  const J = (v) => (rng() - 0.5) * v;
+  for (let z = z0 + 1; z < z1; z += 3.2) {                                         // 外側・内側の列のもう一方の位相
+    add(ICHI_X - 4.6 + J(0.4), 10.3, z + 1.6 + J(0.6), 0.95);
+    add(ICHI_X + 4.6 + J(0.4), 10.3, z + J(0.6), 1.0);
+    add(ICHI_X - 2.3, 10.4, z + 2.4 + J(0.5), 0.7);
+    add(ICHI_X + 2.3, 10.4, z + 0.8 + J(0.5), 0.72);
+  }
+  for (let z = z0 + 0.5; z < z1; z += 2.4) { add(ICHI_X - 6.1 + J(0.3), 9.4, z + J(0.5), 0.9); add(ICHI_X + 6.1 + J(0.3), 9.4, z + 1.2 + J(0.5), 0.9); }   // 壁際
+  for (let z = z0 + 1; z < z1; z += 2.0) { add(ICHI_X - 3.45 + J(0.3), 10.2, z + J(0.5), 0.8); add(ICHI_X + 3.45 + J(0.3), 10.2, z + 1.0 + J(0.5), 0.78); }   // 梁の中間
+  const joz = STREETS.find((s) => s.id === 'joz');                                 // 定禅寺通：柱を倍に、既存の柱にも 1 本足す
+  for (let x = joz.a + 12; x < joz.b - 6; x += 15) for (const off of [-9.6, 9.6, -21.4, 21.4]) {
+    if (Math.abs(x - ICHI_X) < 14) continue;
+    const sg = Math.sign(off);
+    add(x - 1.2, 6.9, JOZ_Z + off - sg * 0.9, 0.9);
+    const xm = x + 7.5; poles.push([xm, JOZ_Z + off]); add(xm, 7.2, JOZ_Z + off - sg * 0.9, 1.0); add(xm + 1.1, 6.6, JOZ_Z + off - sg * 0.9, 0.85);
+  }
+  for (const [a, b] of [[-125, 30], [205, 325]]) for (let z = a + 6.5; z < b; z += 13) for (const sx of [-1, 1]) { poles.push([ICHI_X + sx * 8.8, z]); add(ICHI_X + sx * 7.9, 6.6, z, 0.85); }
+  // 残りはアーケード内の飾りで上限まで埋める（中央の通り道は空ける）
+  for (let guard = 0; baseCount + items.length < STREAMER_LIMIT && guard < 5000; guard++) {
+    const side = rng() < 0.5 ? -1 : 1, ax = 1.6 + 4.6 * rng();
+    add(ICHI_X + side * ax, 10.3 - 0.003 * ax * ax, z0 + 1 + (z1 - z0 - 2) * rng(), 0.7 + 0.25 * rng());
+  }
+  items.length = Math.min(items.length, STREAMER_LIMIT - baseCount);
+  return { items, poles };
 }
 
 /** 竹の柱（細い円柱、先に腕）と、中央列のくす玉。 */

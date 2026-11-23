@@ -4,6 +4,7 @@
 //   不透明（アルファブレンドなし）。紙の灯りは夜に向かって強くなる（emissive）。
 //   領域分割：80 m 格子ごとに InstancedMesh を作り、視錐台カリングが効くよう境界球に揺れ幅の余裕を持たせる。
 import * as THREE from 'three';
+import { makeRng } from '../../../lib/rng.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // 五色（青〔緑〕・赤・黄・白・紫）＋桃。線形値に近い彩度の高い色。
@@ -102,50 +103,68 @@ export function streamerMaterial(uniforms) {
 }
 
 /**
- * 飾りの配置 → 80 m 領域ごとの InstancedMesh（近景・遠景）。
- * items: [{ x, y, z, s(スケール), yaw }]。戻り値 { group, chunks, total, setFraction(f), updateLod(camPos, farDist) }
+ * 飾りの配置 → 近景・遠景の 2 つの InstancedMesh（描画コールは常に 2）。
+ * items: [{ x, y, z, s(スケール), yaw, phase }]、extras：上限まで足した追加分。
+ * 毎フレーム、視錐台に入る束だけを距離で振り分ける：カメラに近い順に最大 nearCap 束（かつ nearDist 以内）を近景（約 480 三角形）、
+ * 残りを遠景（24 三角形）に。インスタンスの書き換えは束の数ぶんのコピーのみ（揺れはシェーダ）。
+ * 戻り値 { group, total, setFraction(f), updateLod(camera, nearDist, nearCap), geoTris }
  */
-export function buildStreamers(items, rng, uniforms, cell = 80) {
+export function buildStreamers(items, rng, uniforms, extras = []) {
   const near = streamerNear(), far = streamerFar();
   const matN = streamerMaterial(uniforms), matF = streamerMaterial(uniforms);
-  const groups = new Map();
-  for (const it of items) { const k = Math.floor(it.x / cell) + ',' + Math.floor(it.z / cell); (groups.get(k) ?? groups.set(k, []).get(k)).push(it); }
+  // 共有 rng の消費量を追加前と同じに保つ（以降の都市要素の配置を変えない）：元の束を 80 m 領域ごとに混ぜていた回数ぶん捨てる
+  const cnt = new Map();
+  for (const it of items) { const k = Math.floor(it.x / 80) + ',' + Math.floor(it.z / 80); cnt.set(k, (cnt.get(k) ?? 0) + 1); }
+  for (const n of cnt.values()) for (let i = n - 1; i > 0; i--) rng();
+  const all = [...items, ...extras];
+  const mix = makeRng(20260808);
+  for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(mix() * (i + 1)); [all[i], all[j]] = [all[j], all[i]]; }   // 間引いても偏らないよう、全体の順序を混ぜる
+  const N = all.length;
+  const mats = new Float32Array(N * 16), phase = new Float32Array(N);
+  { const M = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+    all.forEach((it, i) => { q.setFromAxisAngle(up, it.yaw); s.set(it.s, it.s, it.s); p.set(it.x, it.y, it.z); M.compose(p, q, s); M.toArray(mats, i * 16); phase[i] = it.phase; }); }
   const group = new THREE.Group(); group.name = 'streamers';
-  const chunks = [];
-  const M = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
-  for (const [, list] of groups) {
-    for (let i = list.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [list[i], list[j]] = [list[j], list[i]]; }   // 間引いても偏らないよう順序を混ぜる
-    const mk = (geo, mat) => {
-      const m = new THREE.InstancedMesh(geo.clone(), mat, list.length);
-      m.geometry.boundingSphere = geo.boundingSphere.clone();
-      const ph = new Float32Array(list.length);
-      list.forEach((it, i) => { q.setFromAxisAngle(up, it.yaw); s.set(it.s, it.s, it.s); p.set(it.x, it.y, it.z); M.compose(p, q, s); m.setMatrixAt(i, M); ph[i] = it.phase; });
-      m.geometry.setAttribute('aPhase', new THREE.InstancedBufferAttribute(ph, 1));
-      m.instanceMatrix.needsUpdate = true; m.castShadow = false; m.receiveShadow = false; m.frustumCulled = true;
-      m.computeBoundingSphere();
-      return m;
-    };
-    const mn = mk(near, matN), mf = mk(far, matF);
-    mn.name = 'streamer-near'; mf.name = 'streamer-far';
-    let cx = 0, cz = 0; for (const it of list) { cx += it.x; cz += it.z; } cx /= list.length; cz /= list.length;
-    let rad = 0; for (const it of list) rad = Math.max(rad, Math.hypot(it.x - cx, it.z - cz));
-    group.add(mn, mf);
-    chunks.push({ near: mn, far: mf, n: list.length, cx, cz, rad });
-  }
-  const total = items.length;
+  const mk = (geo, mat, name) => {
+    const m = new THREE.InstancedMesh(geo.clone(), mat, N);
+    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    const a = new THREE.InstancedBufferAttribute(new Float32Array(N), 1); a.setUsage(THREE.DynamicDrawUsage);
+    m.geometry.setAttribute('aPhase', a);
+    m.castShadow = false; m.receiveShadow = false; m.frustumCulled = false; m.count = 0; m.name = name;
+    return m;
+  };
+  const mn = mk(near, matN, 'streamer-near'), mf = mk(far, matF, 'streamer-far');
+  group.add(mn, mf);
+  let active = N;
+  const fr = new THREE.Frustum(), pv = new THREE.Matrix4(), sph = new THREE.Sphere(new THREE.Vector3(), 5.5);
+  const idxBuf = new Int32Array(N), dBuf = new Float32Array(N), order = new Int32Array(N);
+  const put = (m, i, j) => { m.instanceMatrix.array.set(mats.subarray(i * 16, i * 16 + 16), j * 16); m.geometry.attributes.aPhase.array[j] = phase[i]; };
   return {
-    group, chunks, total,
-    setFraction(f) { for (const c of chunks) { const n = Math.max(0, Math.min(c.n, Math.ceil(c.n * f))); c.near.count = n; c.far.count = n; } },
-    /** 領域ごとに近景／遠景を切り替える（CPU は領域数ぶんの距離計算のみ。インスタンスの更新なし）。 */
-    updateLod(cam, farDist) {
-      let nearN = 0, farN = 0;
-      for (const c of chunks) {
-        const d = Math.hypot(cam.x - c.cx, cam.z - c.cz) - c.rad;
-        const useFar = d > farDist;
-        c.near.visible = !useFar; c.far.visible = useFar;
-        if (useFar) farN += c.far.count; else nearN += c.near.count;
+    group, total: N,
+    /** 軽量時：全体の f 割だけを描く（順序は混ぜてあるので偏らない） */
+    setFraction(f) { active = Math.max(0, Math.min(N, Math.ceil(N * f))); },
+    updateLod(camera, nearDist, nearCap) {
+      camera.updateMatrixWorld();
+      pv.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); fr.setFromProjectionMatrix(pv);
+      const cx = camera.position.x, cy = camera.position.y, cz = camera.position.z;
+      let k = 0;
+      for (let i = 0; i < active; i++) {
+        const x = mats[i * 16 + 12], y = mats[i * 16 + 13] - 2.2, z = mats[i * 16 + 14];
+        sph.center.set(x, y, z);
+        if (!fr.intersectsSphere(sph)) continue;
+        idxBuf[k] = i; dBuf[k] = (x - cx) ** 2 + (y - cy) ** 2 + (z - cz) ** 2; k++;
       }
-      return { nearN, farN };
+      // 近い順に nearCap 束まで（nearDist 以内）を近景に。選択は距離のしきい値を求める部分選択（nearCap 番目の距離）
+      const lim = nearDist * nearDist;
+      let thr = lim;
+      if (k > nearCap) { const d = dBuf.slice(0, k).sort(); thr = Math.min(lim, d[nearCap - 1]); }
+      let nn = 0, nf = 0;
+      for (let j = 0; j < k; j++) {
+        const i = idxBuf[j];
+        if (dBuf[j] <= thr && nn < nearCap) { put(mn, i, nn++); } else { put(mf, i, nf++); }
+      }
+      mn.count = nn; mf.count = nf;
+      for (const m of [mn, mf]) { m.instanceMatrix.needsUpdate = true; m.geometry.attributes.aPhase.needsUpdate = true; }
+      return { nearN: nn, farN: nf, culled: active - nn - nf };
     },
     geoTris: { near: near.index ? near.index.count / 3 : near.attributes.position.count / 3, far: far.attributes.position.count / 3 },
   };
