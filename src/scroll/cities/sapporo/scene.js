@@ -6,6 +6,7 @@ import { createMountains, sapporoHeight } from '../../../lib/terrain.js';
 import { ScrollRig } from '../../rig.js';
 import { applyScrollEffects } from '../../city-api.js';
 import { SAPPORO_PATH } from './camera.js';
+import { varyFarBlocks, varyRoofs, findRoofMesh, buildOuterSuburbs, buildPlainDetail } from './farfield.js';
 
 const MTN_RINGS = 160, MTN_SEGS = 400;    // 約12.8万三角形（元は 420×820＝約68.9万）
 
@@ -24,12 +25,18 @@ export class SapporoScrollScene extends SapporoScene {
     if (old) { this.scene.remove(old); old.geometry.dispose(); }
     this.mountains = createMountains(THREE, { heightFn: sapporoHeight(), y: -4, rings: MTN_RINGS, segs: MTN_SEGS });
     this.scene.add(this.mountains);
+    // 遠景の作り込み（Phase 2-3 Step B-2）：遠方住宅街の高さ・窓明かりの地区ごとの変化、外側の住宅街、平原の起伏と色むら
+    const boxMesh = this.scene.children.find((o) => o.isInstancedMesh && o.count === this.boxes.n);
+    this.farVaried = boxMesh ? varyFarBlocks(boxMesh) : 0;
+    const roofMesh = findRoofMesh(this.scene); if (roofMesh) varyRoofs(roofMesh);
+    this.plainDetail = buildPlainDetail(); this.scene.add(this.plainDetail.mesh);
+    this.outer = buildOuterSuburbs(boxMesh.material); this.scene.add(this.outer.mesh);
     this.videoRig = this.rig;      // 動画版の経路（比較・参照用に保持）
     this.rig = new ScrollRig(SAPPORO_PATH);   // frameState() はこの rig.sample(t) を使う
     // 共通の描画負荷対策・霞。動く車・歩行者と、描画順を保つため分割しない箱はタイル分割から除外する。
     applyScrollEffects(this, {
       tiled: this.fx.tiled, haze: this.fx.haze,
-      tileExclude: [this.cars.mesh, this.peds.mesh, this.mountains, this.scene.children.find((o) => o.isInstancedMesh && o.count === this.boxes.n)],
+      tileExclude: [this.cars.mesh, this.peds.mesh, this.mountains, this.plainDetail.mesh, this.outer.mesh, this.scene.children.find((o) => o.isInstancedMesh && o.count === this.boxes.n)],
       skyUniforms: this.sky.uniforms,
     });
   }
