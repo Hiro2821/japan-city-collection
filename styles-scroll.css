@@ -53,6 +53,11 @@ body.selecting #track { display: none; }
   radial-gradient(3px 3px at 58% 70%, #f6d98a 55%, transparent), radial-gradient(2px 2px at 70% 86%, #f6d98a 55%, transparent), radial-gradient(3px 3px at 82% 74%, #ffe6a8 55%, transparent), radial-gradient(2px 2px at 92% 66%, #f6d98a 55%, transparent),
   radial-gradient(ellipse 70% 40% at 50% 100%, rgba(232, 184, 96, .55), transparent),
   linear-gradient(180deg, #0a1030 0%, #1a2a5a 55%, #3a3a5c 100%); }
+.c-kyoto::before { background:
+  radial-gradient(7px 5px at 14% 62%, #d9361a 60%, transparent), radial-gradient(6px 4px at 30% 74%, #ee7a1c 60%, transparent), radial-gradient(8px 5px at 46% 66%, #c4281a 60%, transparent), radial-gradient(6px 4px at 62% 80%, #f0a42a 60%, transparent),
+  radial-gradient(7px 5px at 76% 68%, #d9361a 60%, transparent), radial-gradient(6px 4px at 88% 82%, #ee7a1c 60%, transparent), radial-gradient(3px 3px at 20% 90%, #ffc27a 55%, transparent), radial-gradient(3px 3px at 52% 92%, #ffc27a 55%, transparent), radial-gradient(3px 3px at 82% 91%, #ffc27a 55%, transparent),
+  radial-gradient(ellipse 80% 40% at 50% 100%, rgba(255, 130, 60, .5), transparent),
+  linear-gradient(180deg, #121a46 0%, #4a2f5c 52%, #c0583c 100%); }
 .c-osaka::before { background:
   radial-gradient(3px 3px at 14% 30%, #ff7d9c 55%, transparent), radial-gradient(2px 2px at 28% 20%, #7dd8ff 55%, transparent), radial-gradient(3px 3px at 42% 38%, #ffd98a 55%, transparent), radial-gradient(2px 2px at 55% 24%, #ff9ce0 55%, transparent),
   radial-gradient(3px 3px at 60% 68%, #7dd8ff 55%, transparent), radial-gradient(2px 2px at 72% 84%, #ffd98a 55%, transparent), radial-gradient(3px 3px at 84% 72%, #ff7d9c 55%, transparent), radial-gradient(2px 2px at 93% 62%, #ffe6a8 55%, transparent),

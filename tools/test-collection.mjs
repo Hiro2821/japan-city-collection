@@ -17,7 +17,7 @@ for (const [name, vp] of [['landscape', { width: 1280, height: 720 }], ['portrai
   // 1 選択画面
   await pg.goto(`${base}/scroll.html?three=local&freeze=1`); await ready();
   ok(await pg.evaluate(() => !document.getElementById('select').hidden && !window.__scroll), `${name}: 都市指定なし → 選択画面（シーン未構築）`);
-  ok(await pg.evaluate(() => document.querySelectorAll('.sel-card').length === 4), `${name}: カード 4 枚（札幌・仙台・東京・大阪）`);
+  ok(await pg.evaluate(() => document.querySelectorAll('.sel-card').length === 5), `${name}: カード 5 枚（札幌・仙台・東京・京都・大阪）`);
   await pg.screenshot({ path: `${OUT}/${name}_select.png` });
   // 2 カード → 開始
   await pg.click('.sel-card.c-sendai'); await pg.waitForFunction(() => window.__ready === true && window.__scroll, null, { timeout: 240000 });
@@ -41,8 +41,13 @@ for (const [name, vp] of [['landscape', { width: 1280, height: 720 }], ['portrai
   await pg.click('.fin-btn', { timeout: 180000 }); await pg.waitForFunction(() => window.__ready === true && window.__scroll?.cityModule.meta.id === 'tokyo', null, { timeout: 240000 });
   ok(await pg.evaluate(() => scrollY === 0 && window.__scroll.state().p === 0 && location.search.includes('city=tokyo') && document.querySelectorAll('.cap').length === window.__scroll.cityModule.captions.length), `${name}: 案内タップで東京へ・p=0・キャプション入れ替え`);
   await pg.evaluate(() => window.__scroll.renderAtProgress(1.0));
-  const fin2 = await pg.evaluate(() => document.querySelector('.fin-main').textContent); ok(fin2 === 'Next — OSAKA', `${name}: 東京フィナーレ「${fin2}」`);
+  const fin2 = await pg.evaluate(() => document.querySelector('.fin-main').textContent); ok(fin2 === 'Next — KYOTO', `${name}: 東京フィナーレ「${fin2}」`);
   await pg.screenshot({ path: `${OUT}/${name}_tokyo_finale.png` });
+  await pg.click('.fin-btn', { timeout: 180000 }); await pg.waitForFunction(() => window.__ready === true && window.__scroll?.cityModule.meta.id === 'kyoto', null, { timeout: 240000 });
+  ok(await pg.evaluate(() => scrollY === 0 && window.__scroll.state().p === 0 && location.search.includes('city=kyoto') && document.querySelectorAll('.cap').length === window.__scroll.cityModule.captions.length), `${name}: 案内タップで京都へ・p=0・キャプション入れ替え`);
+  await pg.evaluate(() => window.__scroll.renderAtProgress(1.0));
+  const finK = await pg.evaluate(() => document.querySelector('.fin-main').textContent); ok(finK === 'Next — OSAKA', `${name}: 京都フィナーレ「${finK}」`);
+  await pg.screenshot({ path: `${OUT}/${name}_kyoto_finale.png` });
   await pg.click('.fin-btn', { timeout: 180000 }); await pg.waitForFunction(() => window.__ready === true && window.__scroll?.cityModule.meta.id === 'osaka', null, { timeout: 240000 });
   ok(await pg.evaluate(() => scrollY === 0 && window.__scroll.state().p === 0 && location.search.includes('city=osaka') && document.querySelectorAll('.cap').length === window.__scroll.cityModule.captions.length), `${name}: 案内タップで大阪へ・p=0・キャプション入れ替え`);
   await pg.evaluate(() => window.__scroll.renderAtProgress(1.0));
