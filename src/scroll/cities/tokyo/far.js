@@ -126,65 +126,122 @@ export function buildFarCity(rng, batch, tower) {
 }
 
 // ---------------------------------------------------------------- 東京タワー
+// 実物（高さ 333 m、4 脚、足元の大きなアーチ、メインデッキ 150 m・特別展望台 約 250 m、国際オレンジと白の塗り分け、
+// 太い主筋の X 筋交いの中に細い格子）の構造を、3 段階の詳しさで生成する。
+//   near：主筋＋細い格子（約 6 m 角）／ mid：主筋＋粗い格子／ far：主筋だけを太くしたシルエット。
 const hwAt = (y) => (y <= 150 ? 14 + 26 * Math.pow(1 - y / 150, 1.7) : y <= 250 ? 14 - 9 * Math.pow((y - 150) / 100, 1.15) : 5 - 3.6 * Math.min(1, (y - 250) / 40));
-function beamInto(P, N, I, a, b, t) {
-  const d = new V3().subVectors(b, a); const L = d.length(); if (L < 1e-4) return; d.divideScalar(L);
-  const ref = Math.abs(d.y) > 0.95 ? new V3(1, 0, 0) : new V3(0, 1, 0);
-  const u = new V3().crossVectors(d, ref).normalize(), v = new V3().crossVectors(d, u).normalize();
-  const base = P.length / 3, h = t / 2;
-  for (const e of [a, b]) for (const [su, sv] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) {
-    const nx = u.x * su + v.x * sv, ny = u.y * su + v.y * sv, nz = u.z * su + v.z * sv, nl = Math.hypot(nx, ny, nz);
-    P.push(e.x + (u.x * su + v.x * sv) * h, e.y + (u.y * su + v.y * sv) * h, e.z + (u.z * su + v.z * sv) * h); N.push(nx / nl, ny / nl, nz / nl);
+const ORANGE = [1.0, 0.30, 0.05], WHITE = [1.0, 0.62, 0.36], DECK = [0.50, 0.30, 0.15];            // 塗り分け（橙色の投光で照らされた「白」は淡い暖色）
+const LV_LOW = [0, 34, 62, 86, 106, 124, 150], LV_UP = [150, 178, 204, 228, 250];   // 主筋の段（下部・上部）
+const ARCH_H = 27;                                                       // 足元のアーチの高さ（m）
+class TowerGeo {
+  constructor() { this.P = []; this.N = []; this.C = []; this.I = []; }
+  beam(a, b, t, col) {
+    const { P, N, C, I } = this, d = new V3().subVectors(b, a), L = d.length(); if (L < 1e-4) return; d.divideScalar(L);
+    const ref = Math.abs(d.y) > 0.95 ? new V3(1, 0, 0) : new V3(0, 1, 0);
+    const u = new V3().crossVectors(d, ref).normalize(), v = new V3().crossVectors(d, u).normalize(), base = P.length / 3, h = t / 2;
+    for (const e of [a, b]) for (const [su, sv] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) {
+      const nx = u.x * su + v.x * sv, ny = u.y * su + v.y * sv, nz = u.z * su + v.z * sv, nl = Math.hypot(nx, ny, nz);
+      P.push(e.x + nx * h, e.y + ny * h, e.z + nz * h); N.push(nx / nl, ny / nl, nz / nl); C.push(col[0], col[1], col[2]);
+    }
+    for (let k = 0; k < 4; k++) { const k2 = (k + 1) % 4; I.push(base + k, base + 4 + k, base + k2, base + k2, base + 4 + k, base + 4 + k2); }
   }
-  for (let k = 0; k < 4; k++) { const k2 = (k + 1) % 4; I.push(base + k, base + 4 + k, base + k2, base + k2, base + 4 + k, base + 4 + k2); }
+  box(y0, y1, hw, col) {
+    const g = new THREE.BoxGeometry(2 * hw, y1 - y0, 2 * hw).toNonIndexed(); g.translate(0, (y0 + y1) / 2, 0);
+    const base = this.P.length / 3, p = g.attributes.position.array, n = g.attributes.normal.array;
+    for (let i = 0; i < p.length; i++) { this.P.push(p[i]); this.N.push(n[i]); }
+    for (let i = 0; i < p.length / 3; i++) { this.C.push(col[0], col[1], col[2]); this.I.push(base + i); }
+  }
+  geometry() {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(this.P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(this.N, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(this.C, 3)); g.setIndex(this.I); return g;
+  }
 }
-function boxInto(P, N, I, cx, y0, y1, hw) {
-  const g = new THREE.BoxGeometry(2 * hw, y1 - y0, 2 * hw).toNonIndexed(); g.translate(cx[0], (y0 + y1) / 2, cx[1]);
-  const base = P.length / 3, p = g.attributes.position.array, nn = g.attributes.normal.array;
-  for (let i = 0; i < p.length; i++) { P.push(p[i]); N.push(nn[i]); }
-  for (let i = 0; i < p.length / 3; i++) I.push(base + i);
-}
-function latticeGeo(step, thick, bayDiv) {
-  const P = [], N = [], I = [];
+const FACES = [[1, 1, -1, 1], [-1, 1, -1, -1], [-1, -1, 1, -1], [1, -1, 1, 1]];      // 面ごとの両端コーナー符号
+const archY = (u) => ARCH_H * Math.pow(Math.max(0, 1 - (2 * u - 1) ** 2), 0.62);
+/** lod: { cellW, cellH, tk（太さの倍率）, secondary（細い格子の太さ。0 で無し） } */
+function towerGeo(lod) {
+  const T = new TowerGeo(), { cellW, cellH, tk, sec } = lod;
   const corner = (y, sx, sz) => { const h = hwAt(y); return new V3(sx * h, y, sz * h); };
-  const faces = [[1, 1, -1, 1], [-1, 1, -1, -1], [-1, -1, 1, -1], [1, -1, 1, 1]];      // 面ごとの両端コーナー符号
-  const ys = []; for (let y = 0; y < 250; y += step) ys.push(y); ys.push(250);
-  for (let i = 0; i < ys.length - 1; i++) {
-    const y0 = ys[i], y1 = ys[i + 1];
-    for (const [ax, az, bx, bz] of faces) {
-      beamInto(P, N, I, corner(y0, ax, az), corner(y1, ax, az), thick * 1.9);                // 脚
-      const bays = Math.max(1, Math.round(hwAt(y0) / bayDiv));
-      const pt = (y, k) => corner(y, ax, az).lerp(corner(y, bx, bz), k / bays);
-      for (let k = 0; k < bays; k++) {
-        beamInto(P, N, I, pt(y0, k), pt(y1, k + 1), thick); beamInto(P, N, I, pt(y0, k + 1), pt(y1, k), thick);
-        beamInto(P, N, I, pt(y1, k), pt(y1, k + 1), thick * 0.8);
+  const colOf = (i) => (i % 2 === 0 ? ORANGE : WHITE);
+  // ---- 下部（0〜150 m）
+  for (let i = 0; i < LV_LOW.length - 1; i++) {
+    const y0 = LV_LOW[i], y1 = LV_LOW[i + 1], col = colOf(i + 1);
+    for (const [ax, az, bx, bz] of FACES) {
+      const pt = (y, u) => corner(y, ax, az).lerp(corner(y, bx, bz), u);
+      T.beam(corner(y0, ax, az), corner(y1, ax, az), tk * (3.4 - 1.6 * (y0 / 150)), col);                      // 脚（下ほど太い）
+      if (i > 0) {
+        T.beam(pt(y0, 0), pt(y1, 1), tk * 1.1, col); T.beam(pt(y0, 1), pt(y1, 0), tk * 1.1, col);                // 主筋の X
+        T.beam(pt(y1, 0), pt(y1, 1), tk * 1.3, col);                                                               // 段の水平材
+      }
+      if (sec > 0) {
+        const wd = hwAt(y0) + hwAt(y1);                                                                           // 面の幅（コーナー間 2×hw の平均）
+        const cols = Math.max(1, Math.round(wd / cellW)), rows = Math.max(1, Math.round((y1 - y0) / cellH));
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+          const ya = y0 + (y1 - y0) * r / rows, yb = y0 + (y1 - y0) * (r + 1) / rows, ua = c / cols, ub = (c + 1) / cols;
+          if (i === 0 && ya < archY((ua + ub) / 2) + 1) continue;                                                // アーチの内側は空ける
+          T.beam(pt(ya, ua), pt(yb, ub), sec, col); T.beam(pt(ya, ub), pt(yb, ua), sec, col);
+          if (r > 0) T.beam(pt(ya, ua), pt(ya, ub), sec * 0.9, col);
+        }
       }
     }
   }
-  // 上部：4 本が細くなって 1 本のマストへ（250〜290）、アンテナ（290〜333）
-  for (const [sx, sz] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) beamInto(P, N, I, corner(250, sx, sz), new V3(0, 290, 0), thick * 1.6);
-  beamInto(P, N, I, new V3(0, 250, 0), new V3(0, 333, 0), thick * 1.7 + 0.6);
-  // 展望台（大展望台 2 段・特別展望台）
-  boxInto(P, N, I, [0, 0], 124, 133, 15.2); boxInto(P, N, I, [0, 0], 133.5, 141, 12.5); boxInto(P, N, I, [0, 0], 232, 246, 6.6);
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setIndex(I);
-  return g;
+  // 足元の大アーチ（4 面）：二重の曲線材
+  for (const [ax, az, bx, bz] of FACES) {
+    const pt = (y, u) => corner(y, ax, az).lerp(corner(y, bx, bz), u);
+    const N = lod.archSeg;
+    for (let k = 0; k < N; k++) for (const off of [0, 3.2]) {
+      const u0 = k / N, u1 = (k + 1) / N;
+      T.beam(pt(archY(u0) + off * (archY(u0) > 0.5 ? 1 : 0), u0), pt(archY(u1) + off * (archY(u1) > 0.5 ? 1 : 0), u1), tk * 1.5, ORANGE);
+    }
+  }
+  // ---- 上部（150〜250 m）
+  for (let i = 0; i < LV_UP.length - 1; i++) {
+    const y0 = LV_UP[i], y1 = LV_UP[i + 1], col = colOf(i);
+    for (const [ax, az, bx, bz] of FACES) {
+      const pt = (y, u) => corner(y, ax, az).lerp(corner(y, bx, bz), u);
+      T.beam(corner(y0, ax, az), corner(y1, ax, az), tk * (1.9 - 0.5 * (y0 - 150) / 100), col);
+      T.beam(pt(y0, 0), pt(y1, 1), tk * 0.9, col); T.beam(pt(y0, 1), pt(y1, 0), tk * 0.9, col); T.beam(pt(y1, 0), pt(y1, 1), tk * 1.0, col);
+      if (sec > 0 && lod.cellH < 8) { const ym = (y0 + y1) / 2; T.beam(pt(y0, 0), pt(ym, 0.5), sec, col); T.beam(pt(ym, 0.5), pt(y1, 1), sec, col); T.beam(pt(y0, 1), pt(ym, 0.5), sec, col); T.beam(pt(ym, 0.5), pt(y1, 0), sec, col); }
+    }
+  }
+  // ---- 展望台：大展望台（2 層・150 m 付近）、特別展望台（約 250 m、2 層）
+  T.box(124, 133, 15.4, DECK); T.box(133.5, 141, 12.8, DECK); T.box(141.2, 145, 9.0, ORANGE);
+  T.box(232, 240, 6.9, DECK); T.box(240.2, 246, 5.4, DECK);
+  // ---- アンテナ：4 本が 1 本のマストへ（250〜290）、さらに細い塔（290〜333）。白と橙の帯
+  for (const [sx, sz] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) T.beam(corner(250, sx, sz), new V3(0, 290, 0), tk * 1.5, ORANGE);
+  const bands = [[250, 270, 3.4, WHITE], [270, 290, 3.0, ORANGE], [290, 303, 2.0, WHITE], [303, 316, 1.5, ORANGE], [316, 326, 1.1, WHITE], [326, 333, 0.8, ORANGE]];
+  for (const [y0, y1, t, col] of bands) T.beam(new V3(0, y0, 0), new V3(0, y1, 0), t * Math.max(1, tk * 0.8), col);
+  return T.geometry();
 }
 export function buildTower() {
-  const mat = new THREE.MeshStandardMaterial({ color: 0x3a1c08, roughness: 0.7, metalness: 0.0, emissive: new THREE.Color(1.0, 0.36, 0.07), emissiveIntensity: 0.9 });
-  const near = new THREE.Mesh(latticeGeo(1.7, 0.4, 11), mat), far = new THREE.Mesh(latticeGeo(9, 1.5, 40), mat);
-  for (const m of [near, far]) { m.position.set(TOWER.x, 0, TOWER.z); m.rotation.y = 0; m.frustumCulled = false; }
-  near.name = 'tower-near'; far.name = 'tower-far';
-  // LED の縁取り（脚と頂部）＋足元の投光＋頂部の標識灯
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, color: 0xffffff, roughness: 0.65, metalness: 0.0, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 0.9 });
+  mat.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  totalEmissiveRadiance *= vColor.rgb;'); };
+  mat.customProgramCacheKey = () => 'tokyo-tower-v2';
+  const near = new THREE.Mesh(towerGeo({ cellW: 7, cellH: 6, tk: 1.0, sec: 0.42, archSeg: 16 }), mat);
+  const mid = new THREE.Mesh(towerGeo({ cellW: 16, cellH: 14, tk: 1.5, sec: 0.7, archSeg: 10 }), mat);
+  const far = new THREE.Mesh(towerGeo({ cellW: 99, cellH: 99, tk: 3.2, sec: 0, archSeg: 8 }), mat);
+  const ms = [near, mid, far];
+  for (const m of ms) { m.position.set(TOWER.x, 0, TOWER.z); m.rotation.y = 0; m.frustumCulled = false; }
+  near.name = 'tower-near'; mid.name = 'tower-mid'; far.name = 'tower-far';
+  // LED の縁取り（脚と頂部）＋足元の投光＋頂部の標識灯＋展望台の窓の列＋アーチの縁
   const pos = [], col = [], siz = [];
   for (const [sx, sz] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) for (let y = 4; y <= 250; y += 4) { const h = hwAt(y); pos.push(TOWER.x + sx * h, y, TOWER.z + sz * h); col.push(3.2, 1.4, 0.35); siz.push(0.9); }
   for (let y = 252; y <= 333; y += 3) { pos.push(TOWER.x, y, TOWER.z); col.push(3.2, 1.5, 0.5); siz.push(0.8); }
   for (let i = 0; i < 48; i++) { const a = (i / 48) * Math.PI * 2; pos.push(TOWER.x + Math.cos(a) * 52, 1.5, TOWER.z + Math.sin(a) * 52); col.push(3.6, 1.5, 0.35); siz.push(2.2); }
+  for (const [y, hw, n] of [[128.5, 15.5, 22], [137, 12.9, 18], [236, 7.0, 10]]) for (const [ax, az, bx, bz] of FACES) for (let k = 0; k < n; k++) { const u = (k + 0.5) / n; pos.push(TOWER.x + (ax + (bx - ax) * u) * hw, y, TOWER.z + (az + (bz - az) * u) * hw); col.push(3.0, 2.2, 1.2); siz.push(0.8); }
+  for (const [ax, az, bx, bz] of FACES) for (let k = 1; k < 14; k++) { const u = k / 14, h = hwAt(0); pos.push(TOWER.x + (ax + (bx - ax) * u) * h, archY(u), TOWER.z + (az + (bz - az) * u) * h); col.push(3.4, 1.5, 0.4); siz.push(0.9); }
   pos.push(TOWER.x, 335, TOWER.z); col.push(4.0, 0.2, 0.15); siz.push(2.4);
   const glow = createGlowPoints(THREE, { positions: new Float32Array(pos), colors: new Float32Array(col), sizes: new Float32Array(siz), fogDensity: 0.00004, minPx: 1.4, maxPx: 16 });
+  const tr = (m) => m.geometry.index.count / 3;
   return {
-    near, far, mat, glow, trisNear: near.geometry.index.count / 3, trisFar: far.geometry.index.count / 3,
-    update(cam, n) { const d = Math.hypot(cam.x - TOWER.x, cam.z - TOWER.z, Math.max(0, cam.y - 160) * 0.5); near.visible = d < 650; far.visible = !near.visible; mat.emissiveIntensity = 0.5 + 0.4 * n; glow.uniforms.uGain.value = 0.7 + 0.8 * n; },
+    near, mid, far, meshes: ms, mat, glow, trisNear: tr(near), trisMid: tr(mid), trisFar: tr(far),
+    /** 切替は画面上の大きさ（塔の高さのピクセル数）で決める：縦画面の最終構図は 1.5 km でも画面いっぱいになるため */
+    update(cam, n, projScale = 900) {
+      const d = Math.hypot(cam.x - TOWER.x, cam.y - 120, cam.z - TOWER.z), px = (333 * projScale) / Math.max(40, d);
+      near.visible = px > 280; mid.visible = !near.visible && px > 110; far.visible = !near.visible && !mid.visible;
+      mat.emissiveIntensity = 0.55 + 0.4 * n; glow.uniforms.uGain.value = 0.7 + 0.8 * n;
+    },
   };
 }
 

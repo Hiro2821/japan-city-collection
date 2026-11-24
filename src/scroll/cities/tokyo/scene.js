@@ -80,7 +80,7 @@ export class TokyoScrollScene extends CityScene {
     this._buildTraffic(rng);
     // ゾーンD：高架・電車の光の帯・遠景の街区と窓明かり・東京タワー・富士山
     this.viaduct = buildViaduct(); this.viaduct.meshes.forEach((m) => scene.add(m));
-    this.tower = buildTower(); scene.add(this.tower.near, this.tower.far, this.tower.glow.points);
+    this.tower = buildTower(); scene.add(...this.tower.meshes, this.tower.glow.points);
     const fm = makeFarMaterial(rng); this.farMat = fm.mat; this.farWin = fm.uniforms;
     const farBatch = new BuildingBatch(THREE, this.farMat, 16000);
     this.far = buildFarCity(rng, farBatch, TOWER); this.farMesh = farBatch.build({ castShadow: false }); scene.add(this.farMesh, this.far.glow.points);
@@ -105,7 +105,7 @@ export class TokyoScrollScene extends CityScene {
     this.look.grade = { uShadowAmt: 0.3, uVig: 0.2, uSat: 1.04, uGrain: 0.02, uAberr: 0.0006, uHighTint: new THREE.Color(1.03, 1.0, 0.96) };
     this._ca = new THREE.Color(); this._cb = new THREE.Color();
 
-    applyScrollEffects(this, { tiled: this.fx.tiled, haze: this.fx.haze, tileExclude: [this.boxMesh, this.farMesh, this.viaduct.meshes[0], this.viaduct.meshes[1], this.tower.near, this.tower.far, this.fuji.mesh, this.cars.mesh, this.peds.mesh, this.pedsNaka.mesh], skyUniforms: this.sky.uniforms });
+    applyScrollEffects(this, { tiled: this.fx.tiled, haze: this.fx.haze, tileExclude: [this.boxMesh, this.farMesh, this.viaduct.meshes[0], this.viaduct.meshes[1], ...this.tower.meshes, this.fuji.mesh, this.cars.mesh, this.peds.mesh, this.pedsNaka.mesh], skyUniforms: this.sky.uniforms });
     this._hazePoints();
   }
 
@@ -246,7 +246,7 @@ export class TokyoScrollScene extends CityScene {
     for (const g of [this.far.glow, this.tower.glow]) { g.uniforms.uProj.value = projScale; g.uniforms.uFog.value = fog; }
     this.far.glow.uniforms.uGain.value = 0.55 + 0.9 * n;
     const vu = this.viaduct.uniforms; vu.uTime.value = tg; vu.uFog.value = fog; vu.uGain.value = 0.7 + 0.7 * n;
-    this.tower.update(camera.position, n); this.farWin.uWinGain.value = 0.28 + 0.42 * n;
+    this.tower.update(camera.position, n, projScale); this.farWin.uWinGain.value = 0.28 + 0.42 * n;
     this.shops.mat.color.setRGB(1, 1, 1).multiplyScalar(0.55 + 0.65 * n);
   }
 
