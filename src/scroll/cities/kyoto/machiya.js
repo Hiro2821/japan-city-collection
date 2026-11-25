@@ -40,6 +40,7 @@ export function machiyaMaterial(nightU, spillU) {
     shader.uniforms.uNight = nightU; shader.uniforms.uSpill = spillU;
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vLP; varying vec3 vLN; varying vec3 vSc; varying vec3 vInst;')
+      .replace('#include <color_vertex>', '#ifdef USE_COLOR\n vColor.xyz = color.xyz;\n#endif')
       .replace('#include <begin_vertex>', `#include <begin_vertex>
         vLP = position; vLN = normal; vSc = vec3(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz), length(instanceMatrix[2].xyz));
         #ifdef USE_INSTANCING_COLOR

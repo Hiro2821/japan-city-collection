@@ -32,8 +32,8 @@ const L = [
   [0.82, g(1190, 9, 712), g(1260, 8, 720), 35],            // 三重塔・本堂へ
   [0.87, g(1232, 8, 736), g(1050, 20, 880), 38],           // 舞台：手すり越しに紅葉の谷
   [0.91, g(1216, 40, 756), g(900, 30, 960), 38],
-  [0.94, g(1200, 85, 790), [-229, 40, 1103], 36],          // 最終構図：谷の紅葉と夜景、遠くに京都タワー
-  [1.00, g(1200, 85, 790), [-229, 40, 1103], 36],
+  [0.94, [820, 150, 880], [-229, 70, 1103], 40],          // 最終構図：谷から夜景の上へ張り出し、京都タワーを近づける（距離 約 1.1 km）
+  [1.00, [820, 150, 880], [-229, 70, 1103], 40],
 ];
 export const LANDSCAPE_KEYS = L.map(([p, pos, target, fov]) => ({ t: kt(p), pos, target, fov, ease: lin }));
 
@@ -61,7 +61,7 @@ const DOLLY_SRC = [
   [10, 0.60, 12, 14, 56, 0.55, 50, 0],
   [11, 0.00, 18, 16, 52, 0.7, 70, 0],
   [11, 0.55, 50, 40, 50, 1.6, 140, 0],
-  [12, 0.00, 90, 25, 46, 3.0, 900, 0],
+  [13, 0.00, 170, 40, 46, 3.0, 900, 0],
 ];
 export const DOLLY = DOLLY_SRC.map(([i, u, h, th, fov, sp, ahead, side]) => {
   const f = frac(i, u), [x, z] = poly.at(f * poly.length), [tx, tz] = poly.at(f * poly.length + ahead);
@@ -70,4 +70,4 @@ export const DOLLY = DOLLY_SRC.map(([i, u, h, th, fov, sp, ahead, side]) => {
 
 export const CAM_XZ = []; for (let i = 0; i < LANDSCAPE_KEYS.length - 1; i++) for (let s = 0; s < 8; s++) { const a = LANDSCAPE_KEYS[i].pos, b = LANDSCAPE_KEYS[i + 1].pos, u = s / 8; CAM_XZ.push([a[0] + (b[0] - a[0]) * u, a[2] + (b[2] - a[2]) * u]); }   // 経路の近くに木・家を置かない
 export const PATH = { globalStart: GLOBAL0, duration: DURATION, landscapeKeys: LANDSCAPE_KEYS, route: ROUTE, dolly: DOLLY };
-export const FINAL = { pos: g(1200, 85, 790), target: [TOWER_K.x, 40, TOWER_K.z] };
+export const FINAL = { pos: [820, 150, 880], target: [TOWER_K.x, 40, TOWER_K.z] };

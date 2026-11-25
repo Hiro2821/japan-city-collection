@@ -71,7 +71,7 @@ export class KyotoScrollScene extends CityScene {
     const facade = createFacadeMaterial(THREE, { uNight: this.nightU, uSnow: this.snowU }); this.facade = facade;
     const batch = new BuildingBatch(THREE, facade, 1200); let seed = 1;
     for (let x = -500; x < -60; x += 27) for (let z = -300; z < 320; z += 27) {
-      if (onRoad(x + 13, z + 13, 4) || rng() < 0.18) continue;
+      if (onRoad(x + 13, z + 13, 4) || rng() < 0.18 || CAM_XZ.some((c) => Math.hypot(x + 13 - c[0], z + 13 - c[1]) < 26)) continue;
       const w = 22 + rng() * 4, d = 22 + rng() * 4, h = 10 + 20 * Math.pow(rng(), 1.5);
       batch.add(x + 13, 0, z + 13, w, h, d, h > 20 ? 2 : [0, 3][Math.floor(rng() * 2)], seed++ + rng(), 0.5 + 0.45 * rng());
     }
@@ -128,7 +128,7 @@ export class KyotoScrollScene extends CityScene {
 
     // 遠景：盆地の街区・京都タワー・駅・山並み
     const fm = makeFarMaterial(rng); this.farMat = fm.mat; this.farWin = fm.uniforms;
-    const farBatch = new BuildingBatch(THREE, this.farMat, 16000);
+    const farBatch = new BuildingBatch(THREE, this.farMat, 26000);
     this.far = buildFarCity(rng, farBatch); farBatch.add(TOWER_K.x - 40, 0, TOWER_K.z + 120, 470, 52, 60, 2, 777.7, 0.5);
     this.farMesh = farBatch.build({ castShadow: false }); scene.add(this.farMesh, this.far.glow.points);
     this.kTower = buildKyotoTower(); scene.add(this.kTower.mesh, this.kTower.glow.points);
@@ -198,7 +198,7 @@ export class KyotoScrollScene extends CityScene {
     const flick = 1 + 0.06 * Math.sin(tg * 1.7) + 0.03 * Math.sin(tg * 4.3);                            // 提灯のゆるい息づかい（±8%）
     for (const g of [this.lights, this.lamps, this.far.glow, this.kTower.glow]) { g.uniforms.uProj.value = projScale; g.uniforms.uFog.value = fog; }
     this.lights.uniforms.uGain.value = (0.45 + 1.0 * n) * flick; this.lamps.uniforms.uGain.value = 0.3 + 1.0 * n; this.far.glow.uniforms.uGain.value = 0.55 + 0.9 * n; this.kTower.glow.uniforms.uGain.value = 0.8 + 0.6 * n;
-    this.temples.mat.emissiveIntensity = 0.12 + 0.55 * n; this.kTower.mat.emissiveIntensity = 0.3 + 0.5 * n; this.farWin.uWinGain.value = 0.12 + 0.2 * n;
+    this.temples.mat.emissiveIntensity = 0.12 + 0.55 * n; this.kTower.mat.emissiveIntensity = 0.3 + 0.5 * n; this.farWin.uWinGain.value = 0.2 + 0.35 * n;
     this.lanternMesh.material.emissiveIntensity = (0.7 + 0.9 * n) * flick;
     this.momiji.update(camera, 260);
     const lu = this.leaves.uniforms; lu.uTime.value = tg; lu.uCam.value.copy(camera.position); lu.uProj.value = projScale; lu.uGain.value = 0.4 + 0.3 * n;
