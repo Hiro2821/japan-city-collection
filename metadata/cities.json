@@ -114,6 +114,19 @@
       "status": "planned"
     },
     {
+      "id": "kobe",
+      "name": "神戸",
+      "englishName": "Kobe",
+      "prefecture": "兵庫県",
+      "region": "近畿",
+      "description": "六甲の山腹から港へ。春の夕暮れに灯りがともる、海と山の夜景。",
+      "videoPath": "videos/kobe.webm",
+      "thumbnailPath": "thumbnails/kobe.webp",
+      "displayOrder": 9,
+      "durationSec": 15,
+      "status": "planned"
+    },
+    {
       "id": "hiroshima",
       "name": "広島",
       "englishName": "Hiroshima",
@@ -122,7 +135,7 @@
       "description": "川が流れる水辺の都市。平和記念公園と瀬戸内の穏やかな風景。",
       "videoPath": "videos/hiroshima.webm",
       "thumbnailPath": "thumbnails/hiroshima.webp",
-      "displayOrder": 9,
+      "displayOrder": 10,
       "durationSec": 15,
       "status": "planned"
     },
@@ -135,7 +148,7 @@
       "description": "海と未来への玄関口。福岡タワーと百道浜、天神の都市景観。",
       "videoPath": "videos/fukuoka.webm",
       "thumbnailPath": "thumbnails/fukuoka.webp",
-      "displayOrder": 10,
+      "displayOrder": 11,
       "durationSec": 15,
       "status": "planned"
     }

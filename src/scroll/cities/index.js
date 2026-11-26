@@ -9,6 +9,7 @@ const LOADERS = {
   tokyo: () => import('./tokyo/index.js'),
   kyoto: () => import('./kyoto/index.js'),
   osaka: () => import('./osaka/index.js'),
+  kobe: () => import('./kobe/index.js'),
 };
 export const cityIds = () => Object.keys(LOADERS);
 
